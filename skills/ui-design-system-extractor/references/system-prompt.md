@@ -32,6 +32,144 @@ If any of these is missing, ask. Do not guess.
 
 ---
 
+## Phase 0: Target Library Discovery (DO THIS FIRST for any lib)
+
+> **Most "my own component library" cases are forks of Element Plus / Ant Design
+> / Naive UI with a different prefix, some variables renamed, others extended.**
+> The first job of this skill is to figure out **what variables the lib actually
+> exposes and uses** — not to assume it's a vanilla Element Plus.
+
+### Step 1: Find the lib and confirm its lineage
+
+```bash
+# 1. Find the package
+cat package.json | grep -E '"(@?[a-z0-9-]+/)?[a-z0-9-]+-?ui"|"element-plus"|"antd"|"naive-ui"|"@shadcn/ui"'
+# → e.g. "@my-company/ui": "2.3.1"
+
+# 2. Find the dist
+ls node_modules/@my-company/ui/dist/
+# → e.g. dist/index.css, dist/index.esm.js
+
+# 3. Check if it kept the upstream prefix or changed it
+grep -oE '\-\-[a-z0-9-]+' node_modules/@my-company/ui/dist/index.css | head -20
+# → '--el-color-primary' (kept)  OR  '--my-color-primary' (renamed)  OR  mixed
+```
+
+### Step 2: Dump the full variable list (runtime, source-of-truth)
+
+Browser DevTools console on a page that uses the lib:
+
+```js
+// 1. All variables defined in :root
+const allVars = {}
+for (const sheet of document.styleSheets) {
+  try {
+    for (const rule of sheet.cssRules) {
+      if (rule.style && (rule.selectorText === ':root' || rule.selectorText === ':host')) {
+        for (const prop of rule.style) {
+          if (prop.startsWith('--')) allVars[prop] = rule.style.getPropertyValue(prop)
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+// 2. Variables actually referenced (var(--xxx) usages)
+const used = new Set()
+for (const sheet of document.styleSheets) {
+  try {
+    for (const rule of sheet.cssRules) {
+      const text = rule.cssText || ''
+      for (const m of text.matchAll(/var\(\s*(--[a-z0-9-]+)/g)) used.add(m[1])
+    }
+  } catch (e) {}
+}
+
+console.log('Defined variables:', Object.keys(allVars).length)
+console.log('Referenced variables:', used.size)
+console.log('Intersection (the ones we need to override):', used.size > 0 ? [...used].sort().join('\n') : 'cross-origin stylesheets blocked — fall back to grep')
+
+// 3. Save to clipboard for the agent
+copy([...used].sort().join('\n'))
+```
+
+**Save the output.** This is the "manifest" the agent uses to generate the override file.
+
+### Step 3: Categorize the variables
+
+Group the dumped variables:
+
+```js
+const groups = { color: [], size: [], radius: [], shadow: [], space: [], motion: [], font: [], border: [], other: [] }
+for (const v of used) {
+  if (/color|bg|fill|stroke/i.test(v))          groups.color.push(v)
+  else if (/size|height|font-size|width/i.test(v)) groups.size.push(v)
+  else if (/radius|rounded/i.test(v))           groups.radius.push(v)
+  else if (/shadow|elevation/i.test(v))         groups.shadow.push(v)
+  else if (/space|padding|margin|gap/i.test(v)) groups.space.push(v)
+  else if (/motion|transition|duration/i.test(v)) groups.motion.push(v)
+  else if (/font|line-height|letter/i.test(v))  groups.font.push(v)
+  else if (/border/i.test(v))                   groups.border.push(v)
+  else                                          groups.other.push(v)
+}
+console.table(Object.fromEntries(Object.entries(groups).map(([k,v]) => [k, v.length])))
+```
+
+This tells you **how many variables of each type** the lib actually uses — usually
+uneven (40 colors, 12 sizes, 5 shadows, etc.).
+
+### Step 4: Map the prefix
+
+| Lib declares variables starting with | Classification                              | Action                                 |
+|--------------------------------------|---------------------------------------------|----------------------------------------|
+| `--el-`                              | Vanilla Element Plus (or unchanged fork)    | Use the existing Element Plus mapping  |
+| `--ant-`                             | Vanilla Ant Design (or unchanged fork)      | Use the existing Ant Design mapping    |
+| `--my-`, `--company-`, `--dc-`, etc. | **Renamed fork**                            | Create a custom mapping (see § 4)       |
+| Mixed (`--el-` and `--my-`)          | Partial fork (kept upstream + added own)    | Map both, prioritize the company's own |
+| Variables defined inline (no `--`)   | SCSS-only lib (Element Plus 1.x, Vuetify)   | Need to either upgrade to v2, or write CSS variable wrappers |
+
+### Step 5: Create the custom mapping (if fork renamed the prefix)
+
+The agent should:
+1. Take the Element Plus mapping from `override-patterns.md` as a template
+2. Replace `--el-` with the new prefix
+3. Verify each rename against the dumped variable list (some vars may be removed, some added)
+4. Generate the override file using the new prefix
+
+**Example**: company lib renamed `--el-color-primary` to `--my-color-brand`:
+
+```js
+// Take this from override-patterns.md
+const elMapping = {
+  '--el-color-primary':           'var(--color-primary-500)',
+  '--el-color-primary-light-3':   'var(--color-primary-400)',
+  // ... 100 more
+}
+
+// Apply a prefix transform
+const prefix = '--my-'
+const myMapping = Object.fromEntries(
+  Object.entries(elMapping).map(([k, v]) => [
+    k.replace(/^--el-/, prefix),
+    v
+  ])
+)
+// → { '--my-color-primary': 'var(--color-primary-500)', ... }
+```
+
+### The "I don't have node access" fallback
+
+If the agent can't read `node_modules/` (sandbox, CI, browser-only context), it
+should:
+1. Use the runtime dump (Step 2) as the source of truth
+2. Ask the user to paste the package name and version
+3. Use the grep approach to find the package path
+4. If all else fails, ask the user to provide a sample CSS file from the lib
+
+**Never assume vanilla Element Plus / Ant Design.** Always verify.
+
+---
+
 ## Phase 1.5: Color System Extension (the "fill the gaps" rule)
 
 > **The design source is sampling points, not a complete palette.** A Figma frame

@@ -441,6 +441,66 @@ console.table(hardcoded)
 
 **6 类不能推导** — 字体族 / 字重 / 阴影 / 栅格列数 / 断点 / 动效曲线 — 这些用行业固定值或 3-5 个命名 token。
 
+### "我们公司有自己的组件库,fork 自 Element Plus,变量名不一样怎么办"
+
+> **这是最常见的情况,80% 的公司都是这样** —— 拿 Element Plus / Ant Design 改一层,加业务色,改前缀,重命名。skill 的解法是 **不假设 vanilla 库,先用工具把实际变量挖出来**。
+
+**Step 1: 找到前缀**
+
+```bash
+# 找到你公司的包
+cat package.json | grep -E '"(@?[a-z0-9-]+/)?[a-z0-9-]+-?ui"'
+
+# 提取前缀
+grep -oE '\-\-[a-z0-9-]+' node_modules/@your-company/ui/dist/index.css | head -20
+# → '--el-color-primary' (没改) / '--my-color-brand' (重命名了) / 混合
+```
+
+**Step 2: 浏览器里 dump 所有实际用到的变量**
+
+在用了你公司组件的页面 DevTools 里跑:
+
+```js
+const used = new Set()
+for (const sheet of document.styleSheets) {
+  try {
+    for (const rule of sheet.cssRules) {
+      for (const m of (rule.cssText || '').matchAll(/var\(\s*(--[a-z0-9-]+)/g)) {
+        used.add(m[1])
+      }
+    }
+  } catch (e) {}
+}
+copy([...used].sort().join('\n'))   // 一键复制
+```
+
+把这段贴给 Agent,它就拿到了"真正需要覆盖"的变量清单(可能 40 个,也可能 60 个,看 fork 改了多少)。
+
+**Step 3: Agent 用 prefix 转换器从模板生成 fork 映射**
+
+```js
+// Agent 内部脚本(对你透明)
+const template = { /* 拿 Element Plus 模板 */ }
+const actualVars = new Set([/* Step 2 的输出 */])
+const mapping = Object.fromEntries(
+  Object.entries(template)
+    .map(([k, v]) => [k.replace('--el-', '--my-'), v])  // 改前缀
+    .filter(([k]) => actualVars.has(k))                  // 只保留实际存在的
+)
+```
+
+**Step 4: 加 fork 自己的扩展变量**
+
+公司 lib 经常有自己的色(`--my-color-brand`)或组件 token(`--my-bg-card`)。这些没有上游模板对应,Agent 会在 override 文件里**手动追加映射到设计 token**:
+
+```css
+--my-color-brand:    var(--color-primary-500);
+--my-color-positive: var(--color-success-500);
+--my-bg-card:        var(--color-bg-elevated);
+```
+
+**完整的处理流程、SCSS-only 库的兜底、移除变量的处理,见** [references/override-patterns.md 的 "Working with Forked / Internal Component Libraries" 章节](skills/ui-design-system-extractor/references/override-patterns.md)。
+
 ### "新设计有 5xl 字号,组件库只有 h1-h6"
 
 Agent 会**新增 token + direct CSS 扩展**,不要求你改组件代码:

@@ -969,3 +969,177 @@ body .el-button.el-button--primary {
   background: var(--color-primary-500);
 }
 ```
+
+---
+
+## Working with Forked / Internal Component Libraries
+
+> **Reality check**: 80% of company-internal "组件库" are forks of Element Plus /
+> Ant Design / Naive UI with a different prefix, some variables renamed, others
+> extended. **The mappings below are starting templates, not final truth.** Always
+> run [Phase 0](system-prompt.md#phase-0-target-library-discovery-do-this-first-for-any-lib) first to discover the actual variables your lib exposes.
+
+### Common fork patterns
+
+| Upstream     | Forked prefix examples              | Typical renames                           |
+|--------------|--------------------------------------|-------------------------------------------|
+| Element Plus | `--el-` → `--my-`, `--dc-`, `--company-`, `--xxx-brand-` | color-primary → color-brand               |
+| Ant Design   | `--ant-` → same as above             | colorPrimary → brandColor, colorText → textColor |
+| Naive UI     | `--n-` → same as above               | primaryColor → brandColor                 |
+| shadcn/ui    | `--` (no prefix)                     | foreground → text-primary                 |
+| Vuetify      | `--v-` → `--my-`                     | primary → brand                           |
+
+### Step 1: Run the discovery script (Phase 0 in system-prompt.md)
+
+Get the actual list of variables the lib uses. Save the output.
+
+### Step 2: Apply prefix transform to the template mappings
+
+Use a small script to generate the forked mapping from any of the templates in
+this file:
+
+```js
+// Adjust these
+const UPSTREAM_PREFIX = '--el-'        // the prefix in the template
+const FORK_PREFIX = '--my-'             // the prefix in the user's fork
+const VARIABLE_RENAMES = {
+  // Optional: variables that were renamed (not just prefixed)
+  // '--el-color-primary': '--my-color-brand',
+  // '--el-color-success': '--my-color-positive',
+}
+
+const template = {
+  // Paste the mapping from above (Element Plus, Ant Design, etc.)
+  '--el-color-primary':           'var(--color-primary-500)',
+  '--el-color-primary-light-3':   'var(--color-primary-400)',
+  // ... 100 more
+}
+
+const forkMapping = Object.fromEntries(
+  Object.entries(template).map(([k, v]) => {
+    let newKey = k.replace(UPSTREAM_PREFIX, FORK_PREFIX)
+    if (VARIABLE_RENAMES[k]) newKey = VARIABLE_RENAMES[k]
+    return [newKey, v]
+  })
+)
+
+// Filter to only variables that actually exist in the lib
+const ACTUAL_VARS = new Set([
+  // Paste the output from the Phase 0 dump
+  // '--my-color-brand',
+  // '--my-color-positive',
+  // ...
+])
+
+const finalMapping = Object.fromEntries(
+  Object.entries(forkMapping).filter(([k]) => ACTUAL_VARS.has(k))
+)
+
+console.log(`Mapped ${Object.keys(finalMapping).length} of ${Object.keys(forkMapping).length} template entries`)
+console.log(`Unused template entries:`, Object.keys(forkMapping).filter(k => !ACTUAL_VARS.has(k)))
+console.log(`Lib variables not covered:`, [...ACTUAL_VARS].filter(k => !forkMapping[k]))
+```
+
+**This gives you three lists**:
+1. **Mapped** (most of them) — use in the override file
+2. **Template entries the lib doesn't have** — remove from template (lib was simplified)
+3. **Lib variables not in the template** — add manually (lib was extended)
+
+### Step 3: Add the missing variables (lib extensions)
+
+Common extensions in forked libs:
+
+```css
+/* Company-specific brand tokens */
+--my-color-brand:        var(--color-primary-500);    /* their renamed primary */
+--my-color-brand-hover:  var(--color-primary-600);
+--my-color-positive:     var(--color-success-500);    /* their renamed success */
+
+/* Company-specific surfaces */
+--my-bg-page:            var(--color-bg-primary);
+--my-bg-card:            var(--color-bg-elevated);
+--my-bg-hover:           var(--color-neutral-100);
+
+/* Company-specific typography */
+--my-text-display:       var(--font-size-4xl);
+--my-text-caption:       var(--font-size-xs);
+```
+
+The user will need to provide these — they're not in any upstream template.
+
+### Step 4: Handle the "removed variable" case
+
+Sometimes a fork **removes** a variable. If the lib doesn't have
+`--my-color-warning-light-5` anymore, the override mapping for it is a no-op —
+**don't include it**. The agent should not write CSS for variables that don't
+exist; it just bloats the file and may cause confusion.
+
+### Step 5: Handle the "SCSS-only" case
+
+Element Plus 1.x and Vuetify don't expose CSS variables directly — they use
+SCSS preprocessor variables compiled at build time. In this case:
+
+**Option A: Upgrade the lib to v2 (recommended)**
+- Element Plus 2.x exposes `--el-*` variables; 1.x doesn't
+- Ant Design 5.x exposes `--ant-*` variables; 4.x doesn't
+
+**Option B: Write CSS variable wrappers**
+```scss
+// In your own styles, before the lib's CSS
+:root {
+  --my-color-primary: #6366F1;  // your design token
+}
+
+// Re-define the lib's SCSS vars via CSS
+$--color-primary: var(--my-color-primary);  // SCSS-level, not CSS
+```
+
+This requires SCSS build config. Use only if upgrading isn't an option.
+
+**Option C: Use direct CSS instead of variable override**
+```css
+/* No variable to override, so we override the property directly */
+:where(.el-button.el-button--primary) {
+  background-color: var(--color-primary-500);
+  border-color:     var(--color-primary-500);
+}
+```
+
+This is the most fragile but works without any lib changes. Use sparingly.
+
+### Validation: cross-check vs the actual rendered page
+
+After generating the override, verify on a real page:
+
+```js
+// For each variable in your override file, check it's actually defined
+const overrideVars = [
+  '--my-color-primary', '--my-color-brand', // ...
+]
+const actualVars = new Set([...document.styleSheets].flatMap(sheet => {
+  try { return [...sheet.cssRules].filter(r => r.selectorText === ':root')
+    .flatMap(r => [...r.style].filter(p => p.startsWith('--'))) } catch (e) { return [] }
+}))
+
+const missing = overrideVars.filter(v => !actualVars.has(v))
+if (missing.length) console.warn('Override targets non-existent variables:', missing)
+```
+
+If a target variable doesn't exist, the override silently does nothing. Always
+check the rendered output, not just the file content.
+
+### Template maintenance
+
+The mappings in this file are maintained against **stable, major-version
+branches** of upstream libs:
+
+- Element Plus: 2.4+
+- Ant Design: 5.0+
+- Naive UI: 2.36+
+- shadcn/ui: latest (continuously updated)
+- MUI: 5.0+
+- Chakra UI: 2.0+
+- Vuetify: 3.0+ (v2 has no CSS variables)
+
+If the user's lib is older, the variable names may differ. Run Phase 0 discovery
+to confirm.
