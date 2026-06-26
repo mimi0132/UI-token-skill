@@ -32,6 +32,119 @@ If any of these is missing, ask. Do not guess.
 
 ---
 
+## Phase 1.5: Color System Extension (the "fill the gaps" rule)
+
+> **The design source is sampling points, not a complete palette.** A Figma frame
+> typically shows you 1-3 stops of the primary and 1-2 swatches of each semantic
+> color. Element Plus / Ant Design / shadcn need ~40 color variables to fully
+> re-skin. The gap between "what the design gives" and "what the lib needs" is
+> what the agent closes.
+
+### The rule: one anchor + math, not hand-picked hex
+
+For each color scale (primary, neutral, success, warning, danger, info), pick
+**one anchor** (usually the 500 stop, sometimes 600). Derive the other 9 stops
+using `color-mix()`. This is **not optional** — hand-picking 9 hex values for
+each of 6 scales is 54+ decisions the agent can get wrong, and any tweak to the
+brand color would force you to redo all 54.
+
+The full algorithm + calibrated percentages is in
+[references/token-spec.md § 0](token-spec.md#0-color-system-derivation-algorithm).
+The key formulas:
+
+```css
+/* Lighter: mix anchor with white at calibrated percentages */
+--color-primary-50:  color-mix(in srgb, var(--color-primary-500)  8%, white);
+--color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
+--color-primary-200: color-mix(in srgb, var(--color-primary-500) 28%, white);
+--color-primary-300: color-mix(in srgb, var(--color-primary-500) 44%, white);
+--color-primary-400: color-mix(in srgb, var(--color-primary-500) 68%, white);
+
+/* Darker: mix anchor with black at calibrated percentages */
+--color-primary-600: color-mix(in srgb, var(--color-primary-500) 88%, black);
+--color-primary-700: color-mix(in srgb, var(--color-primary-500) 76%, black);
+--color-primary-800: color-mix(in srgb, var(--color-primary-500) 60%, black);
+--color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
+```
+
+**Change `--color-primary-500` once, the whole scale re-derives automatically.**
+
+### "What to extract vs derive" decision
+
+| Design source gives              | Agent does                                          |
+|----------------------------------|-----------------------------------------------------|
+| Only `--color-primary-500`       | Use as anchor, derive the other 9 stops             |
+| `--color-primary-500` + `--color-primary-700` | Use both, derive the other 8 stops     |
+| All 10 primary stops             | Use all, skip derivation for primary                |
+| Only "main blue" + "hover"       | Treat main as 500, hover as 600, derive the rest    |
+| No primary at all                | Ask the user, or use a sensible default             |
+| Neutral grays not in design      | Derive from primary hue, fully desaturated          |
+| Success/warning/danger not in design | Use standard defaults (green/amber/red) + derive |
+
+**Fill in the gaps, don't fabricate**: If the design gives 1 stop explicitly, use
+that exact value as the anchor and derive the rest. Don't override the explicitly
+given value with a derived one.
+
+### Extension decision tree
+
+```
+Read design source
+   │
+   ├─ Primary color found?
+   │    ├─ Yes → use as --color-primary-500, derive 50/100/200/300/400/600/700/800/900
+   │    └─ No  → ask user or use --color-primary-500: #6366F1 (sensible default)
+   │
+   ├─ Neutral grays found?
+   │    ├─ Yes → use as --color-neutral-700/800/900 anchors, derive the rest
+   │    └─ No  → derive from primary hue (--color-neutral-h: <primary-h>)
+   │
+   ├─ Semantic colors (success/warning/danger/info) found?
+   │    ├─ Yes → use as -500 anchors, derive
+   │    └─ No  → use standard defaults, derive
+   │
+   └─ Surface/background/text colors found?
+        ├─ Yes → map to --color-bg-* and --color-text-*
+        └─ No  → derive from neutral scale
+```
+
+### Quality gate
+
+Before generating the override file, run this check:
+
+```js
+// In the browser, on the preview page:
+const missing = []
+for (const v of [
+  '--color-primary-50', '-100', '-200', '-300', '-400', '-500', '-600', '-700', '-800', '-900',
+  '--color-neutral-50', '-100', '-200', '-300', '-400', '-500', '-600', '-700', '-800', '-900',
+  '--color-success-50', '-500', '-700',
+  '--color-warning-50', '-500', '-700',
+  '--color-danger-50', '-500', '-700',
+  '--color-info-50', '-500', '-700',
+  '--color-bg-primary', '--color-bg-secondary', '--color-bg-elevated',
+  '--color-text-primary', '--color-text-secondary', '--color-text-disabled',
+  '--color-border-default', '--color-border-strong',
+]) {
+  const fullVar = v.startsWith('--') ? v : '--color-' + v
+  if (!getComputedStyle(document.documentElement).getPropertyValue(fullVar).trim()) {
+    missing.push(fullVar)
+  }
+}
+if (missing.length) console.error('Missing tokens:', missing)
+```
+
+If any are missing, **add them to `colors.css` before generating the override**.
+Gaps here = the "前边换了后边没变" failure mode.
+
+### Why this matters
+
+The user will say "I gave you a color, why isn't the rest of the design updated?"
+because the lib has 40+ color variables and they only gave you 2. The answer is
+"we derived the rest algorithmically" — not "we missed it". Make this derivation
+**explicit in the README** so the user knows the magic happened.
+
+---
+
 ## Phase 2: Token Extraction Checklist
 
 When reading the design source, extract the following. **Be concrete, not vague.**

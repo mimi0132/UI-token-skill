@@ -1,7 +1,173 @@
 # Token Specification Reference
 
-This file is the detailed spec for the 5 token files. Load when the agent needs to know
+This file is the detailed spec for the 7 token files. Load when the agent needs to know
 the exact variable name, value range, or dark-mode mapping.
+
+---
+
+## 0. Color System Derivation Algorithm
+
+> **Critical rule**: The design source is **sampling points**, not a complete palette.
+> Figma exports typically give 1-3 stops of the primary and 1-2 swatches of each
+> semantic color. The agent's job is to **derive the rest** into a complete,
+> perceptually uniform scale that fully covers every lib variable.
+
+### 0.1 The "single anchor + math" approach
+
+Pick **one anchor color per scale** (usually the 500 stop, sometimes the 600). Derive
+all 9 other stops using `color-mix()`. Calibrated percentages that produce a
+perceptually uniform scale similar to Tailwind / Radix:
+
+```css
+:root {
+  /* The single anchor — from the design */
+  --color-primary-500: #6366F1;
+
+  /* Derived lighter stops (mix with white) */
+  --color-primary-50:  color-mix(in srgb, var(--color-primary-500)  8%, white);
+  --color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
+  --color-primary-200: color-mix(in srgb, var(--color-primary-500) 28%, white);
+  --color-primary-300: color-mix(in srgb, var(--color-primary-500) 44%, white);
+  --color-primary-400: color-mix(in srgb, var(--color-primary-500) 68%, white);
+
+  /* Derived darker stops (mix with black) */
+  --color-primary-600: color-mix(in srgb, var(--color-primary-500) 88%, black);
+  --color-primary-700: color-mix(in srgb, var(--color-primary-500) 76%, black);
+  --color-primary-800: color-mix(in srgb, var(--color-primary-500) 60%, black);
+  --color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
+}
+```
+
+**Change `--color-primary-500` once, all 9 stops re-derive automatically.** No
+maintenance burden.
+
+### 0.2 Mixing table (10-stop scale)
+
+| Stop | Mix % of anchor | With    | Use case                                  |
+|------|-----------------|---------|-------------------------------------------|
+| 50   | 8%              | white   | Subtle background tints, hover wash       |
+| 100  | 16%             | white   | Selected background, badges               |
+| 200  | 28%             | white   | Disabled background, light borders        |
+| 300  | 44%             | white   | Light hover, focus ring at 30% alpha     |
+| 400  | 68%             | white   | Secondary buttons, links                  |
+| 500  | 100%            | (anchor)| **Primary buttons, links, brand**         |
+| 600  | 88%             | black   | Primary hover                             |
+| 700  | 76%             | black   | Primary active                            |
+| 800  | 60%             | black   | Primary text on light bg (high contrast)  |
+| 900  | 44%             | black   | Dark mode primary, high-emphasis text     |
+
+**Why these percentages**: They approximate a perceptually uniform L* curve in
+Oklch, matching what Tailwind v3+ and Radix Colors produce. They look the same
+across hues (not too aggressive for warm colors, not too subtle for cool).
+
+### 0.3 What to extract vs derive
+
+| Design source gives        | Agent does                                            |
+|----------------------------|-------------------------------------------------------|
+| Only primary-500           | Use as anchor, derive 50/100/200/300/400/600/700/800/900 |
+| Primary-500 + primary-700  | Use both, derive the rest                              |
+| All 10 primary stops       | Use all, skip derivation for primary                   |
+| Only "main blue" + "hover" | Treat "main" as 500, "hover" as 600, derive the rest   |
+| No primary at all          | Pick from user-provided accent OR ask                  |
+
+**The "fill in the gaps" rule**: When the design gives SOME stops explicitly, use
+those exact values and only derive the missing ones. When the design gives NONE,
+derive everything from the anchor. Never mix hand-picked hex into a derived scale
+unless the design explicitly specifies it.
+
+### 0.4 Neutral scale derivation
+
+Designs rarely specify neutrals. Derive from the primary hue, fully desaturated:
+
+```css
+:root {
+  /* Anchor: a cool gray that harmonizes with the primary */
+  --color-neutral-h: 220;        /* hue = same as primary's hue, or +10° for cooler */
+  --color-neutral-s: 0%;         /* fully desaturated */
+  --color-neutral-l: 50%;
+
+  --color-neutral-50:  hsl(var(--color-neutral-h) var(--color-neutral-s) 97%);
+  --color-neutral-100: hsl(var(--color-neutral-h) var(--color-neutral-s) 94%);
+  --color-neutral-200: hsl(var(--color-neutral-h) var(--color-neutral-s) 88%);
+  --color-neutral-300: hsl(var(--color-neutral-h) var(--color-neutral-s) 78%);
+  --color-neutral-400: hsl(var(--color-neutral-h) var(--color-neutral-s) 65%);
+  --color-neutral-500: hsl(var(--color-neutral-h) var(--color-neutral-s) 50%);
+  --color-neutral-600: hsl(var(--color-neutral-h) var(--color-neutral-s) 40%);
+  --color-neutral-700: hsl(var(--color-neutral-h) var(--color-neutral-s) 30%);
+  --color-neutral-800: hsl(var(--color-neutral-h) var(--color-neutral-s) 16%);
+  --color-neutral-900: hsl(var(--color-neutral-h) var(--color-neutral-s)  8%);
+}
+```
+
+**Tuning knobs**:
+- Add 5-10% saturation for a "warm" feel (e.g., `--color-neutral-s: 8%`)
+- Shift hue ±20° to harmonize with the primary's hue
+- If the design explicitly provides neutrals (e.g., "text gray is #1F2937"), use them as
+  the 800/900 stops and derive the rest
+
+### 0.5 Semantic color derivation
+
+For success / warning / danger / info, the design often gives one swatch each. Use
+the same anchor+math approach. If the design gives NONE, use these defaults which
+work for 90% of B2B products:
+
+```css
+:root {
+  --color-success-500: #10B981;   /* green */
+  --color-warning-500: #F59E0B;   /* amber */
+  --color-danger-500:  #EF4444;   /* red */
+  --color-info-500:    #3B82F6;   /* blue (or use --color-primary-500 for "info = primary") */
+}
+```
+
+If the design gives explicit semantic colors (e.g., "error red is #DC2626"), use
+those as the 500 anchor and derive the rest.
+
+### 0.6 State colors (hover / active / disabled / focus)
+
+Don't add a new scale — consume from the primary scale. Map every state to an
+existing stop:
+
+| State              | Token                              | Element Plus variable    |
+|--------------------|------------------------------------|--------------------------|
+| Primary default    | `--color-primary-500`              | `--el-color-primary`     |
+| Primary hover      | `--color-primary-600`              | `--el-color-primary-light-3` |
+| Primary active     | `--color-primary-700`              | `--el-color-primary-dark-2`  |
+| Primary disabled   | `--color-neutral-200`              | `--el-color-primary-light-9` (or override with neutral) |
+| Focus ring         | `--color-primary-500` at 30% alpha | direct CSS `:focus-visible` |
+
+This way, "change the primary" automatically changes all states — no separate
+state variables to maintain.
+
+### 0.7 The full lib coverage check
+
+After deriving, verify every color variable the lib exposes is mapped. For
+Element Plus, the complete list (~40 vars):
+
+```
+--el-color-primary, --el-color-primary-light-3, --el-color-primary-light-5,
+--el-color-primary-light-7, --el-color-primary-light-8, --el-color-primary-light-9,
+--el-color-primary-dark-2,
+
+--el-color-success (same light/dark set, 7 vars),
+--el-color-warning (7 vars),
+--el-color-danger  (7 vars),
+--el-color-info    (7 vars),
+
+--el-text-color-primary, --el-text-color-regular, --el-text-color-secondary,
+--el-text-color-placeholder, --el-text-color-disabled,
+
+--el-border-color, --el-border-color-light, --el-border-color-lighter,
+--el-border-color-extra-light, --el-border-color-dark, --el-border-color-darker,
+--el-border-color-hover,
+
+--el-fill-color, --el-fill-color-light, --el-fill-color-lighter,
+--el-fill-color-extra-light, --el-fill-color-blank, --el-fill-color-dark,
+--el-mask-color,
+```
+
+If your `colors.css` doesn't have a token for each of these, **add it before
+generating the override file**. Gaps here = "前边换了后边没变".
 
 ---
 
@@ -30,63 +196,104 @@ Rules:
 
 ## 1. `colors.css`
 
-### Color Scales (10 stops each)
+> **See [§ 0 Color System Derivation Algorithm](#0-color-system-derivation-algorithm) first.** The 10-stop scales below are derived
+> from a single anchor using `color-mix()`. Don't hand-pick hex for the 9 derived stops.
 
-For each scale, define 50 → 900:
+### 1.1 Primary scale (anchor from design, rest derived)
 
 ```css
 :root {
-  /* Neutral */
-  --color-neutral-50:  #FAFAFA;
-  --color-neutral-100: #F5F5F5;
-  --color-neutral-200: #E5E5E5;
-  --color-neutral-300: #D4D4D4;
-  --color-neutral-400: #A3A3A3;
-  --color-neutral-500: #737373;
-  --color-neutral-600: #525252;
-  --color-neutral-700: #404040;
-  --color-neutral-800: #262626;
-  --color-neutral-900: #171717;
+  /* 🔑 SINGLE ANCHOR — change this one value to re-derive the whole scale */
+  --color-primary-500: #6366F1;
 
-  /* Primary (override per design) */
-  --color-primary-50:  #EEF2FF;
-  --color-primary-100: #E0E7FF;
-  --color-primary-200: #C7D2FE;
-  --color-primary-300: #A5B4FC;
-  --color-primary-400: #818CF8;
-  --color-primary-500: #6366F1;  /* main */
-  --color-primary-600: #4F46E5;
-  --color-primary-700: #4338CA;
-  --color-primary-800: #3730A3;
-  --color-primary-900: #312E81;
+  /* Lighter stops: mix with white */
+  --color-primary-50:  color-mix(in srgb, var(--color-primary-500)  8%, white);
+  --color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
+  --color-primary-200: color-mix(in srgb, var(--color-primary-500) 28%, white);
+  --color-primary-300: color-mix(in srgb, var(--color-primary-500) 44%, white);
+  --color-primary-400: color-mix(in srgb, var(--color-primary-500) 68%, white);
 
-  /* Semantic */
-  --color-success-500: #10B981;
-  --color-warning-500: #F59E0B;
-  --color-danger-500:  #EF4444;
-  --color-info-500:    #3B82F6;
+  /* Darker stops: mix with black */
+  --color-primary-600: color-mix(in srgb, var(--color-primary-500) 88%, black);
+  --color-primary-700: color-mix(in srgb, var(--color-primary-500) 76%, black);
+  --color-primary-800: color-mix(in srgb, var(--color-primary-500) 60%, black);
+  --color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
 }
 ```
 
-### Semantic Colors (use these in components)
+### 1.2 Neutral scale (derived from primary hue, desaturated)
+
+```css
+:root {
+  --color-neutral-h: 220;   /* tune: same as primary's hue, or +10° cooler */
+  --color-neutral-s: 0%;    /* tune: 5-8% for warmer feel */
+
+  --color-neutral-50:  hsl(var(--color-neutral-h) var(--color-neutral-s) 97%);
+  --color-neutral-100: hsl(var(--color-neutral-h) var(--color-neutral-s) 94%);
+  --color-neutral-200: hsl(var(--color-neutral-h) var(--color-neutral-s) 88%);
+  --color-neutral-300: hsl(var(--color-neutral-h) var(--color-neutral-s) 78%);
+  --color-neutral-400: hsl(var(--color-neutral-h) var(--color-neutral-s) 65%);
+  --color-neutral-500: hsl(var(--color-neutral-h) var(--color-neutral-s) 50%);
+  --color-neutral-600: hsl(var(--color-neutral-h) var(--color-neutral-s) 40%);
+  --color-neutral-700: hsl(var(--color-neutral-h) var(--color-neutral-s) 30%);
+  --color-neutral-800: hsl(var(--color-neutral-h) var(--color-neutral-s) 16%);
+  --color-neutral-900: hsl(var(--color-neutral-h) var(--color-neutral-s)  8%);
+}
+```
+
+### 1.3 Semantic scales (one anchor each, rest derived)
+
+```css
+:root {
+  /* Success — green */
+  --color-success-500: #10B981;
+  --color-success-50:  color-mix(in srgb, var(--color-success-500)  8%, white);
+  --color-success-100: color-mix(in srgb, var(--color-success-500) 16%, white);
+  --color-success-200: color-mix(in srgb, var(--color-success-500) 28%, white);
+  --color-success-300: color-mix(in srgb, var(--color-success-500) 44%, white);
+  --color-success-400: color-mix(in srgb, var(--color-success-500) 68%, white);
+  --color-success-600: color-mix(in srgb, var(--color-success-500) 88%, black);
+  --color-success-700: color-mix(in srgb, var(--color-success-500) 76%, black);
+  --color-success-800: color-mix(in srgb, var(--color-success-500) 60%, black);
+  --color-success-900: color-mix(in srgb, var(--color-success-500) 44%, black);
+
+  /* Warning — amber */
+  --color-warning-500: #F59E0B;
+  --color-warning-50:  color-mix(in srgb, var(--color-warning-500)  8%, white);
+  --color-warning-100: color-mix(in srgb, var(--color-warning-500) 16%, white);
+  /* ... (apply same formula as success) */
+
+  /* Danger — red */
+  --color-danger-500: #EF4444;
+  --color-danger-50:  color-mix(in srgb, var(--color-danger-500)  8%, white);
+  /* ... */
+
+  /* Info — usually = primary, or its own blue */
+  --color-info-500: var(--color-primary-500);   /* common: "info" = primary */
+  /* ... */
+}
+```
+
+### 1.4 Semantic colors (consume from scales)
 
 ```css
 :root {
   --color-bg-primary:    var(--color-neutral-50);
   --color-bg-secondary:  var(--color-neutral-100);
-  --color-bg-elevated:   #FFFFFF;
+  --color-bg-elevated:   white;
 
   --color-text-primary:   var(--color-neutral-900);
   --color-text-secondary: var(--color-neutral-600);
   --color-text-disabled:  var(--color-neutral-400);
-  --color-text-inverse:   #FFFFFF;
+  --color-text-inverse:   white;
 
   --color-border-default: var(--color-neutral-200);
   --color-border-strong:  var(--color-neutral-300);
+  --color-border-focus:   var(--color-primary-500);
 }
 ```
 
-### Dark Mode (mandatory)
+### 1.5 Dark Mode (mandatory)
 
 ```css
 [data-theme="dark"] {

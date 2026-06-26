@@ -404,6 +404,25 @@ console.table(hardcoded)
 - `color-typography` — 颜色 + 字体
 - `custom:<list>` — 自定义要替换的维度,例 `custom:colors,radius,shadow`
 
+### "设计稿只给了 1 个主色,怎么覆盖组件库 40+ 颜色变量"
+
+设计稿给的是**采样点**,不是完整调色板。Agent 不会瞎填 40 个 hex,而是用**单锚点 + 数学推导**生成完整体系:
+
+```css
+/* 你给 1 个主色,Agent 推导 9 个停靠点 */
+--color-primary-500: #6366F1;              /* 来自设计稿 */
+--color-primary-50:  color-mix(in srgb, var(--color-primary-500)  8%, white);
+--color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
+/* ... 9 个推导停靠点,改 500 一次,全部联动 ... */
+--color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
+```
+
+中性色 / 语义色同理:
+- **中性灰**: 抽 design 没给,自动用主色色相 + 0% 饱和度推导
+- **成功/警告/危险/信息**: 抽 design 没给,用绿/琥珀/红/蓝默认锚点 + 推导
+
+**改一个 hex,整张调色板重新算**。换主色不痛苦,改间距不痛苦,任何后续调参都是改 1 个值。
+
 ### "新设计有 5xl 字号,组件库只有 h1-h6"
 
 Agent 会**新增 token + direct CSS 扩展**,不要求你改组件代码:
