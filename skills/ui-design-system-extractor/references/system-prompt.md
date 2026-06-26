@@ -35,6 +35,9 @@ If any of these is missing, ask. Do not guess.
 ## Phase 2: Token Extraction Checklist
 
 When reading the design source, extract the following. **Be concrete, not vague.**
+The new design is the source of truth for all visual variables; the existing component
+library keeps its own interaction behavior. We are doing **visual re-skin**, not a behavior
+replacement.
 
 ### Colors
 
@@ -96,6 +99,59 @@ values for 50/100/200 — use the math.
 | Standard         | Buttons, cards, hover    | `--shadow-md` |
 | Pronounced       | Dropdowns, popovers      | `--shadow-lg` |
 | Overlay          | Modals, dialogs          | `--shadow-overlay` |
+| Colored          | Glow effects, brand tints| `--shadow-{primary,success,danger}-glow` |
+
+### Border
+
+| What to look for | Where to find it          | Variable       |
+|------------------|--------------------------|----------------|
+| Default width    | Inputs, cards, dividers  | `--border-width-default` (1px) |
+| Strong width     | Emphasized containers    | `--border-width-strong` (2px) |
+| Style            | Solid / dashed / dotted  | `--border-style-default` |
+
+### Layout / Grid
+
+| What to look for        | Where to find it        | Variable                  |
+|-------------------------|-------------------------|---------------------------|
+| Grid columns            | Main page layouts       | `--grid-columns` (12 / 16 / 24) |
+| Gutter                  | Between grid items      | `--grid-gutter` (16 / 24 / 32) |
+| Container max width     | Page container          | `--container-max-width` (1200 / 1440 / 1600) |
+| Container padding       | Inner page padding      | `--container-padding` (16 / 24 / 32) |
+| Breakpoint - sm         | Mobile / tablet         | `--breakpoint-sm` (640) |
+| Breakpoint - md         | Tablet                  | `--breakpoint-md` (768) |
+| Breakpoint - lg         | Desktop                 | `--breakpoint-lg` (1024) |
+| Breakpoint - xl         | Wide desktop            | `--breakpoint-xl` (1280) |
+| Breakpoint - 2xl        | Ultra-wide              | `--breakpoint-2xl` (1536) |
+
+**Rule**: If the design uses a 24-column grid (Material/IBM style), preserve it even
+if the original lib uses 12 columns. We override the relevant lib variables
+(`--ant-grid-columns`, `--el-grid-columns`, etc.) or use direct CSS.
+
+### Icon / Sizing
+
+| What to look for | Where to find it      | Variable            |
+|------------------|-----------------------|---------------------|
+| Icon size sm     | Inline icons, button  | `--icon-size-sm` (12) |
+| Icon size md     | Default icons         | `--icon-size-md` (16) |
+| Icon size lg     | Standalone icons      | `--icon-size-lg` (20) |
+| Icon size xl     | Hero / feature icons  | `--icon-size-xl` (24) |
+| Control height sm| Compact controls      | `--control-height-sm` (24) |
+| Control height md| Default controls      | `--control-height-md` (32) |
+| Control height lg| Emphasized controls   | `--control-height-lg` (40) |
+
+### Motion (Optional but Recommended)
+
+| What to look for  | Where to find it    | Variable            |
+|-------------------|---------------------|---------------------|
+| Easing            | All transitions     | `--ease-default` (cubic-bezier(0.4, 0, 0.2, 1)) |
+| Easing emphasized | Hover, focus        | `--ease-emphasized` (cubic-bezier(0.2, 0, 0, 1)) |
+| Duration fast     | Micro-interactions  | `--duration-fast` (150ms) |
+| Duration base     | Default transitions | `--duration-base` (250ms) |
+| Duration slow     | Page-level          | `--duration-slow` (400ms) |
+
+**Note**: Some libs (Element Plus, Ant Design) hardcode durations. We can override
+specific selector animations but not all motion. Be explicit in the README about
+which motions are theme-controlled and which inherit from the lib.
 
 ---
 

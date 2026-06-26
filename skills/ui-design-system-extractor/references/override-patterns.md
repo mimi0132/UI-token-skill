@@ -788,3 +788,184 @@ If the user is unsure, ask these questions and recommend based on answers:
 
 If the user has no preference, **default to Element Plus** for Vue or **Ant Design** for
 React — both have the most complete CSS variable coverage.
+
+---
+
+## Layout / Grid / Breakpoint Overrides
+
+Grid systems in most UI libraries use a mix of CSS variables and JS props. The CSS
+variable part (gutter / columns at the CSS layer) is overridable; the JS part (Row span
+on Ant Design `<Col span={n}>`, Element Plus `<el-col :span="n">`) is **not** — those
+props still take numbers but the visual gap is controlled by CSS variables.
+
+### Element Plus
+
+```css
+/* Append to overrides/element-plus-theme-override.css */
+:root {
+  --el-grid-columns:           var(--grid-columns);
+  --el-grid-gutter:            var(--grid-gutter);
+  --el-grid-row-gap:           var(--grid-gutter);
+  --el-grid-column-gap:        var(--grid-gutter);
+
+  /* Breakpoints — Element Plus uses these for responsive props */
+  --el-breakpoint-xs:          480px;
+  --el-breakpoint-sm:          var(--breakpoint-sm);
+  --el-breakpoint-md:          var(--breakpoint-md);
+  --el-breakpoint-lg:          var(--breakpoint-lg);
+  --el-breakpoint-xl:          var(--breakpoint-xl);
+
+  /* Container */
+  --el-container-padding:      var(--container-padding);
+  --el-container-max-width:    var(--container-max-width);
+}
+```
+
+### Ant Design
+
+```css
+/* Append to overrides/antd-theme-override.css */
+:root {
+  --ant-grid-columns:          var(--grid-columns);
+  --ant-grid-gutter-width:     var(--grid-gutter);
+  --ant-grid-row-gutter-width: var(--grid-gutter);
+
+  --ant-screen-xs:             480px;
+  --ant-screen-sm:             var(--breakpoint-sm);
+  --ant-screen-md:             var(--breakpoint-md);
+  --ant-screen-lg:             var(--breakpoint-lg);
+  --ant-screen-xl:             var(--breakpoint-xl);
+  --ant-screen-xxl:            var(--breakpoint-2xl);
+
+  --ant-container-max-width:   var(--container-max-width);
+}
+```
+
+### shadcn / Tailwind
+
+Tailwind handles grid via `tailwind.config.js` — override in JS, not CSS:
+
+```js
+// tailwind.config.js
+module.exports = {
+  theme: {
+    screens: {
+      sm: '640px',   // --breakpoint-sm
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
+      '2xl': '1536px',
+    },
+    container: {
+      center: true,
+      padding: '1rem',  // --container-padding
+      screens: {  // override container max-width per breakpoint
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
+      },
+    },
+  },
+}
+```
+
+### Vuetify
+
+```ts
+// In vuetify-theme.ts
+export const vuetify = createVuetify({
+  theme: { /* ... colors ... */ },
+  defaults: {
+    VContainer: { maxWidth: 'var(--container-max-width)' },
+    VRow: { noGutters: false },
+  },
+  display: {
+    thresholds: {
+      xs: 0, sm: 640, md: 768, lg: 1024, xl: 1280, xxl: 1536,
+    },
+  },
+})
+```
+
+### Naive UI
+
+```ts
+// naive-theme.ts — append to themeOverrides.common
+export const themeOverrides = {
+  common: {
+    /* ... colors / fonts ... */
+    heightSmall:  '24px',
+    heightMedium: '32px',
+    heightLarge:  '40px',
+    heightHuge:   '48px',
+  },
+}
+// Naive UI grid is NGrid / NGi — gutter is a prop, not a CSS var.
+// Use a wrapper CSS rule for responsive grid.
+```
+
+### Quick Library Support Matrix (Layout)
+
+| Library        | CSS var override for gutter | CSS var override for breakpoints | Grid column count change |
+|----------------|----------------------------|----------------------------------|--------------------------|
+| Element Plus   | ✅ `--el-grid-gutter`       | ✅ `--el-breakpoint-*`            | ⚠️ partial (still uses 24 internal) |
+| Ant Design     | ✅ `--ant-grid-gutter-width`| ✅ `--ant-screen-*`               | ⚠️ partial |
+| shadcn / TW    | ❌ use tailwind.config      | ❌ use tailwind.config           | ✅ fully configurable    |
+| Naive UI       | ❌ gutter is prop           | ❌ use theme breakpoints          | ✅ fully configurable    |
+| MUI v6 / Joy   | ✅ CSS vars                 | ✅ CSS vars                       | ✅ fully configurable    |
+| Chakra UI      | ✅ CSS vars                 | ✅ theme tokens                   | ✅ fully configurable    |
+| Vuetify        | ⚠️ mixed                   | ✅ `display.thresholds`           | ✅ fully configurable    |
+
+If the new design demands a grid column count change (12 → 24), use direct CSS for the
+breakpoint layer. The `<Col span={n}>` prop continues to work; only the gutter and
+breakpoint behavior shifts.
+
+---
+
+## Extension Patterns
+
+When the new design has visual patterns the lib doesn't expose via CSS variables, use
+**direct CSS** (not just `--var` overrides). Examples:
+
+```css
+/* New design uses 5xl / 6xl heading sizes — Element Plus only has h1-h6 */
+:root {
+  --el-font-size-extra-large: 4rem;     /* 64px */
+  --el-font-size-display:      5.5rem;  /* 88px */
+}
+
+/* New design uses more shadow levels than the lib exposes */
+.el-card.is-elevated {
+  box-shadow: var(--shadow-xl);
+}
+
+/* New design has a brand-tinted glow */
+.el-button.is-primary:hover {
+  box-shadow: var(--shadow-primary-glow);
+}
+
+/* New design uses unusual control heights */
+.el-button.is-jumbo {
+  height: 56px;
+  padding: 0 32px;
+  font-size: var(--font-size-lg);
+}
+```
+
+**Rule**: When you can't find the right CSS variable, use the lib's CSS class
+(`.el-button`, `.ant-btn`, etc.) + `:where()` to keep specificity low so user code can
+still override.
+
+```css
+/* ✅ good — low specificity */
+:where(.el-button).is-primary {
+  background: var(--color-primary-500);
+}
+
+/* ❌ avoid — high specificity prevents user override */
+body .el-button.el-button--primary {
+  background: var(--color-primary-500);
+}
+```

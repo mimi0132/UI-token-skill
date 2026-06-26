@@ -1,16 +1,19 @@
 ---
 name: "ui-design-system-extractor"
-description: "Extracts visual design tokens (colors, typography, spacing, radius, shadow) from a design source (Figma / image / hand-written tokens), then generates a single CSS override file that maps those tokens onto an existing component library's CSS variables (Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra) to re-skin the existing library without changing any component code. Invoke when user has an existing component library and wants to change only its visual style to match a new design."
+description: "Extracts all visual design tokens (colors, typography, font-size, font-weight, line-height, spacing, radius, shadow, border, grid, container, breakpoints, motion) from a design source (Figma / image / hand-written tokens), then generates a single CSS override file that re-skins an existing component library (Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra / Vuetify) by mapping those tokens onto the library's CSS variables. Preserves all interaction behavior (clicks, keyboard, forms, modals, a11y). Invoke when user has an existing component library and wants to change its visual style to match a new design without changing any component code."
 ---
 
 # UI Design System Extractor — Theme Override
 
-> **Single purpose**: 给现有的组件库换一套视觉风格,不改任何组件代码。
+> **Single purpose**: 给现有的组件库做视觉再设计 —— **保留所有交互行为,只替换视觉层**。
 >
-> **它做什么**: 从设计稿提取视觉 token,生成一个 CSS 文件,把这个 CSS 文件
-> 引入到用户项目,所有现有的 `<el-button>` / `<Button>` / shadcn 组件自动变脸。
+> **替换或延伸**(从新设计稿提取):颜色 / 字号 / 字重 / 行高 / 字体 / 间距 / 圆角 / 阴影 / 边框 / 栅格 / 容器 / 断点 / 动效曲线 / 焦点环。
 >
-> **它不做什么**: 不生成新组件、不改 API、不动用户已有代码。
+> **保留**(原组件库自带,不改一行):点击 / 键盘 / 焦点 / 表单校验 / 弹窗定位 / 动画时序 / 无障碍属性 / 滚动行为 / API / props。
+>
+> **它做什么**: 从设计稿提取全维度视觉 token,生成 1 个 CSS 覆盖文件,引入到用户项目,所有现有的 `<el-button>` / `<Button>` / shadcn 组件按新设计稿自动变脸,行为零变化。
+>
+> **它不做什么**: 不生成新组件、不改 API、不动用户已有代码、不改交互行为。
 
 ## 安装
 
