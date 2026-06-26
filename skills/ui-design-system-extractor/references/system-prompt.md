@@ -194,6 +194,97 @@ The preview page is the user's acceptance test. Before declaring done, verify:
 
 ---
 
+## Phase 4.5: Composite Component & Hardcoded Color Audit
+
+The most common failure mode of theme overrides is **"primary buttons changed, but
+the disabled / hover / focus / nested states stayed the old color"**. This phase
+exists to catch it before declaring done.
+
+### Why cascade doesn't always work
+
+1. **SCSS-derived variables are pre-computed.** `--el-color-primary-light-3` is
+   `mix(white, #409EFF, 30%)` baked at SCSS compile time. Changing
+   `--el-color-primary` does NOT re-derive the light stops.
+2. **Hardcoded hex values exist.** Some components (`el-textarea__inner`, complex
+   pickers, animation keyframes) have hardcoded colors that bypass the variable
+   system.
+3. **Composite components have their own tokens.** `<el-card>` background uses
+   `--el-fill-color-blank`, not `--el-color-primary`. If your new design changes
+   "page background", you must override card/table/modal-specific tokens too.
+
+### Audit checklist — every component, every state
+
+For each component in the design, verify these states render consistently:
+
+| Component              | States to verify                                                  | Variables that MUST be in the override |
+|------------------------|-------------------------------------------------------------------|----------------------------------------|
+| **Button (primary)**   | default / hover / active / disabled / focus / loading             | `--<lib>-color-primary`, `-light-3/5/7/8/9`, `-dark-2` |
+| **Button (default)**   | default / hover / active / disabled                                | `--<lib>-border-color`, `-text-color-regular`, `-fill-color-blank` |
+| **Input**              | default / hover / focus / disabled / error / readonly             | `--<lib>-input-border-color`, `-text-color-regular/placeholder`, `-fill-color` |
+| **Tag**                | default + each color (primary / success / warning / danger / info) | All semantic color light/dark stops  |
+| **Card**               | default / hover (if interactive)                                   | `--<lib>-bg-color`, `-border-color-lighter` |
+| **Dialog / Drawer**    | default + overlay                                                  | `--<lib>-bg-color`, `-bg-overlay`     |
+| **Table**              | default / striped / hover / selected / empty                       | `--<lib>-table-border-color`, `-table-row-hover-bg-color`, `-table-header-bg-color` |
+| **Select / Dropdown**  | default / hover / open / selected / disabled                       | `--<lib>-border-color-hover`, `-fill-color-light`, `-text-color-primary` |
+| **Form**               | default / error / disabled                                         | `--<lib>-form-item-label-color`, `-form-item-error-color` |
+| **Menu / Submenu**     | default / hover / active                                           | `--<lib>-menu-hover-bg-color`, `-menu-text-color`, `-menu-active-color` |
+| **Pagination**         | default / hover / active / disabled                                | `--<lib>-pagination-hover-color`, `-color-primary` |
+| **Message / Notification** | default + each type                                              | All semantic color stops              |
+| **Loading**            | default                                                            | `--<lib>-color-primary` (spinner)     |
+| **Skeleton**           | default                                                            | `--<lib>-skeleton-color`              |
+
+### How to detect hardcoded values (browser audit)
+
+Run this in DevTools console on the preview page:
+
+```js
+// Find all elements where some property is a hardcoded hex
+// (not coming from a CSS variable)
+const hardcoded = []
+document.querySelectorAll('*').forEach(el => {
+  const cs = getComputedStyle(el)
+  for (const prop of ['color', 'background-color', 'border-color', 'fill', 'stroke']) {
+    const v = cs[prop]
+    if (v && v.startsWith('rgb') && !v.includes('var(')) {
+      hardcoded.push({ tag: el.tagName, class: el.className, prop, value: v })
+    }
+  }
+})
+console.table(hardcoded.slice(0, 50))
+```
+
+If you see hardcoded colors in *target* elements (e.g., a Button showing as
+`rgb(64, 158, 255)` after override), add a direct CSS rule to the override file:
+
+```css
+:where(.el-button.el-button--primary) {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+}
+```
+
+### Defensive override pattern
+
+For each lib, append a defensive block to the override file that re-asserts the
+high-traffic composite components:
+
+```css
+/* Element Plus — defensive composite component override */
+:root {
+  /* Re-assert after lib CSS in case any selector is more specific */
+  --el-button-bg-color:           var(--color-primary-500);
+  --el-button-border-color:       var(--color-primary-500);
+  --el-button-hover-bg-color:     var(--color-primary-400);
+  --el-button-active-bg-color:    var(--color-primary-600);
+  --el-button-disabled-bg-color:  var(--color-bg-secondary);
+}
+```
+
+This is **belt and suspenders** — usually not needed if Phase 3 is done correctly,
+but it eliminates the most common "only 80% of components updated" complaint.
+
+---
+
 ## Phase 5: README Checklist
 
 The README must answer, in this order:

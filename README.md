@@ -362,6 +362,37 @@ document.documentElement.classList.add('dark')
 
 有些组件用了 hardcoded 颜色,不在 CSS 变量体系里。打开 DevTools 看 computed style,提 issue。
 
+### "我换了主色,组合组件里有些状态没变(按钮 hover / 禁用色 / 输入框 focus)"
+
+这是 CSS 变量级联的**已知边界**,不是 bug。常见三种情况:
+
+1. **SCSS 派生色**:`--el-color-primary-light-3` 是 SCSS 编译时算好的 `mix(white, #409EFF, 30%)`,改 `--el-color-primary` 不会自动重算。
+2. **硬编码颜色**:少数组件(动画帧、复杂 picker)源码里写死了 hex。
+3. **组合组件自己的 token**:`<el-card>` 读 `--el-fill-color-blank`,不是 `--el-color-primary`。
+
+skill 的解法是**完整覆盖所有派生色 + 关键组合组件的复述断言**,并提供一份 DevTools 自检脚本让你在预览页自己跑一遍。
+
+### 怎么自检覆盖完整度
+
+在预览页打开 DevTools,跑这段:
+
+```js
+// 找所有没经过 CSS 变量、用了硬编码 rgb 的目标组件
+const hardcoded = []
+document.querySelectorAll('.el-button, .el-input, .el-card, .el-tag, .el-dialog, .el-table, .el-menu, .el-pagination, .el-form').forEach(el => {
+  const cs = getComputedStyle(el)
+  for (const prop of ['color', 'background-color', 'border-color']) {
+    const v = cs[prop]
+    if (v.startsWith('rgb') && !v.includes('var(')) {
+      hardcoded.push({ tag: el.tagName, class: el.className, prop, value: v })
+    }
+  }
+})
+console.table(hardcoded)
+```
+
+如果有结果,就是漏网的地方。把对应的组件类名 + 颜色提给 Agent,会让它在 override 文件里追加 direct CSS 复述。
+
 ### "我想保留字体和间距,只换颜色和圆角"
 
 告诉 Agent "只换颜色和圆角,其它保持默认" — 它会跳过对应的 token 文件,只输出与颜色 / 圆角相关的 CSS 变量。
