@@ -171,6 +171,54 @@ generating the override file**. Gaps here = "前边换了后边没变".
 
 ---
 
+## 0.5 Other Derivable Variable Categories
+
+The "single anchor + math" pattern isn't unique to colors. **Six other categories**
+share this property. Knowing which ones are derivable (and which are conventional)
+lets the agent fill gaps the same way it does for colors.
+
+### The "derivable" matrix
+
+| Category        | Derivable? | Anchor(s)                    | Derivation method              |
+|-----------------|------------|------------------------------|--------------------------------|
+| **Color**       | ✅ Yes     | `--color-primary-500`        | `color-mix(in srgb, …, white\|black)` |
+| **Spacing**     | ✅ Yes     | `--space-base` (4 or 8)      | `calc(var(--space-base) * N)`  |
+| **Radius**      | ✅ Yes     | `--radius-base` (4 or 6)     | `calc(var(--radius-base) * N)` |
+| **Font size**   | ✅ Yes     | `--font-size-base` + `--font-size-ratio` | `calc(var(--font-size-base) * pow(var(--font-size-ratio), N))` |
+| **Line height** | ✅ Yes     | `--line-height-base`         | direct value or `calc(...)`     |
+| **Border width**| ✅ Yes     | `--border-width-base` (1px)  | `calc(var(--border-width-base) * N)` |
+| **Motion dur.** | ✅ Yes     | `--motion-duration-base`     | `calc(var(--motion-duration-base) * N)` |
+| Font family     | ❌ No      | —                            | must be specified              |
+| Font weight     | ❌ No      | —                            | industry fixed 4 values         |
+| Shadow          | ❌ No      | —                            | 3-5 discrete tokens (degrees of freedom too high) |
+| Grid columns    | ❌ No      | —                            | industry fixed 12/16/24         |
+| Breakpoints     | ❌ No      | —                            | industry fixed                  |
+| Motion easing   | ❌ No      | —                            | industry fixed 3-4 curves       |
+
+**Rule of thumb**: if the property has a **single dimension** (size, length, time),
+it can be derived. If it has **multiple dimensions** (shadow = offset x/y + blur + spread + color + opacity), use a small set of named tokens.
+
+### Why this matters
+
+The user will say "I gave you 16px body text and 24px heading, why aren't all my
+text sizes set?" — because the design gave 2 of 8 and the lib needs all 8. Same
+answer as color: "we derived the rest from a base + ratio." Make it explicit in
+the README so the user knows the magic happened for **every category**, not just
+color.
+
+### Tunable knobs
+
+| Anchor             | Common values          | When to pick                           |
+|--------------------|------------------------|----------------------------------------|
+| `--space-base`     | 4px (compact) / 8px (default) / 4px (Material) | Density of the design source |
+| `--radius-base`    | 2px (sharp) / 4px (default) / 6px (rounded) / 12px (iOS-style) | Visual personality |
+| `--font-size-base` | 14px (compact) / 16px (default) / 18px (spacious) | Body text size in the design |
+| `--font-size-ratio`| 1.125 (subtle) / 1.25 (Material) / 1.333 (strong) / 1.5 (dramatic) | Heading contrast strength |
+| `--border-width-base` | 1px (always)        | Almost never change                    |
+| `--motion-duration-base` | 150ms (snappy) / 200ms (default) / 300ms (leisurely) | Brand tempo |
+
+---
+
 ## Naming Convention
 
 ```
@@ -314,7 +362,7 @@ Rules:
 
 ## 2. `typography.css`
 
-### Families
+### Families (cannot be derived — must be specified)
 
 ```css
 :root {
@@ -324,23 +372,32 @@ Rules:
 }
 ```
 
-### Type Scale (8 steps)
+### Type Scale — derived from base + ratio (geometric progression)
 
 ```css
 :root {
-  --font-size-xs:   12px;  /* caption */
-  --font-size-sm:   14px;  /* body-sm */
-  --font-size-md:   16px;  /* body (default) */
-  --font-size-lg:   18px;  /* body-lg */
-  --font-size-xl:   20px;  /* h6 */
-  --font-size-2xl:  24px;  /* h5 */
-  --font-size-3xl:  30px;  /* h4 */
-  --font-size-4xl:  36px;  /* h3 */
-  /* Extend as needed: 5xl: 48px, 6xl: 60px */
+  /* 🔑 ANCHORS — pick base from design, pick ratio for personality */
+  --font-size-base:  16px;     /* body text size from design */
+  --font-size-ratio: 1.25;     /* major third (Material); try 1.125/1.333/1.5 */
+
+  --font-size-xs:   calc(var(--font-size-base) / var(--font-size-ratio) / var(--font-size-ratio));   /* 10.24px */
+  --font-size-sm:   calc(var(--font-size-base) / var(--font-size-ratio));                            /* 12.8px  */
+  --font-size-md:   var(--font-size-base);                                                           /* 16px    */
+  --font-size-lg:   calc(var(--font-size-base) * var(--font-size-ratio));                            /* 20px    */
+  --font-size-xl:   calc(var(--font-size-base) * var(--font-size-ratio) * var(--font-size-ratio));   /* 25px    */
+  --font-size-2xl:  calc(var(--font-size-base) * var(--font-size-ratio) * var(--font-size-ratio) * var(--font-size-ratio)); /* 31.25px */
+  --font-size-3xl:  calc(var(--font-size-base) * pow(var(--font-size-ratio), 4));                     /* 39.06px */
+  --font-size-4xl:  calc(var(--font-size-base) * pow(var(--font-size-ratio), 5));                     /* 48.83px */
+  --font-size-5xl:  calc(var(--font-size-base) * pow(var(--font-size-ratio), 6));                     /* 61.04px */
+  --font-size-6xl:  calc(var(--font-size-base) * pow(var(--font-size-ratio), 7));                     /* 76.3px  */
 }
 ```
 
-### Weights
+**When the design gives explicit sizes** (e.g., "h1 is 32px, body is 14px"), use
+those as the source of truth and **overwrite** the derived values — don't force
+the math to match.
+
+### Weights (cannot be derived — industry fixed 4 values)
 
 ```css
 :root {
@@ -351,27 +408,29 @@ Rules:
 }
 ```
 
-### Line Heights
+### Line Heights (derive from base, or specify 3 fixed values)
 
 ```css
 :root {
-  --line-height-tight:    1.2;   /* headings */
-  --line-height-normal:   1.5;   /* body */
-  --line-height-relaxed:  1.75;  /* long-form */
+  --line-height-base: 1.5;        /* 🔑 ANCHOR */
+
+  --line-height-tight:   1.2;                       /* headings */
+  --line-height-normal:  var(--line-height-base);   /* body */
+  --line-height-relaxed: calc(var(--line-height-base) + 0.25);  /* 1.75 */
 }
 ```
 
-### Letter Spacing
+### Letter Spacing (3 fixed values, tied to size)
 
 ```css
 :root {
-  --letter-spacing-tight:  -0.02em;  /* display sizes */
+  --letter-spacing-tight:  -0.02em;  /* display sizes (5xl+) */
   --letter-spacing-normal: 0;
   --letter-spacing-wide:   0.05em;   /* labels / uppercase */
 }
 ```
 
-### Component Mapping
+### Component Mapping (consume primitives)
 
 ```css
 :root {
@@ -389,25 +448,38 @@ Rules:
 
 ## 3. `spacing.css`
 
+### Spacing Scale — derived from a single base unit (linear)
+
 ```css
 :root {
+  /* 🔑 ANCHOR — pick 4 (compact/Material) or 8 (default/Bootstrap) */
+  --space-base: 4px;
+
   --space-0:   0;
-  --space-1:   4px;
-  --space-2:   8px;
-  --space-3:   12px;
-  --space-4:   16px;
-  --space-5:   20px;
-  --space-6:   24px;
-  --space-8:   32px;
-  --space-10:  40px;
-  --space-12:  48px;
-  --space-16:  64px;
-  --space-20:  80px;
-  --space-24:  96px;
+  --space-1:   calc(var(--space-base) * 1);    /*  4px */
+  --space-2:   calc(var(--space-base) * 2);    /*  8px */
+  --space-3:   calc(var(--space-base) * 3);    /* 12px */
+  --space-4:   calc(var(--space-base) * 4);    /* 16px */
+  --space-5:   calc(var(--space-base) * 5);    /* 20px */
+  --space-6:   calc(var(--space-base) * 6);    /* 24px */
+  --space-8:   calc(var(--space-base) * 8);    /* 32px */
+  --space-10:  calc(var(--space-base) * 10);   /* 40px */
+  --space-12:  calc(var(--space-base) * 12);   /* 48px */
+  --space-16:  calc(var(--space-base) * 16);   /* 64px */
+  --space-20:  calc(var(--space-base) * 20);   /* 80px */
+  --space-24:  calc(var(--space-base) * 24);   /* 96px */
 }
 ```
 
-### Semantic Spacing
+**Change `--space-base: 4px` → `--space-base: 8px` and the whole scale doubles.**
+This makes "tighter" or "looser" spacing a one-line change.
+
+**Common base choices**:
+- `4px` → Material Design, compact, dense data tables
+- `8px` → Bootstrap, Tailwind default, balanced
+- `4px` (with 1.5x intermediate steps) → Modern iOS-style density
+
+### Semantic Spacing (consume from scale)
 
 ```css
 :root {
@@ -425,21 +497,90 @@ Rules:
 
 ## 4. `radius.css`
 
+### Radius Scale — derived from a single base unit (multiplicative)
+
 ```css
 :root {
+  /* 🔑 ANCHOR — pick the personality of the design */
+  --radius-base: 6px;   /* try 2 (sharp) / 4 (default) / 6 (rounded) / 12 (iOS-style) */
+
   --radius-none: 0;
-  --radius-sm:   2px;
-  --radius-md:   6px;    /* default for buttons/inputs */
-  --radius-lg:   12px;   /* default for cards/modals */
-  --radius-xl:   16px;
-  --radius-2xl:  24px;
-  --radius-full: 9999px; /* pills, avatars */
+  --radius-sm:   var(--radius-base);                     /*  6px */
+  --radius-md:   calc(var(--radius-base) * 1.5);         /*  9px */
+  --radius-lg:   calc(var(--radius-base) * 2);           /* 12px */
+  --radius-xl:   calc(var(--radius-base) * 3);           /* 18px */
+  --radius-2xl:  calc(var(--radius-base) * 4);           /* 24px */
+  --radius-full: 9999px;                                 /* independent — pills / avatars */
+}
+```
+
+**Change `--radius-base: 6px` → `--radius-base: 12px` and the whole scale gets
+"softer".** This is how the "iOS-style" / "Material" / "shadcn" personality is
+captured in one variable.
+
+**Personality presets**:
+- `2px` → Material Design 2 (sharp, professional)
+- `4px` → shadcn / Linear (subtle rounding)
+- `6px` → Tailwind default (balanced)
+- `12px` → iOS / Stripe / Modern SaaS (soft)
+- `16px` → Extra-soft / Notion-style (pillowy)
+
+---
+
+## 5. `border.css`
+
+### Border Width — derived from base (almost always 1px)
+
+```css
+:root {
+  --border-width-base: 1px;   /* 🔑 ANCHOR — almost always 1 */
+
+  --border-width-none:    0;
+  --border-width-default: var(--border-width-base);                /* 1px */
+  --border-width-strong:  calc(var(--border-width-base) * 2);      /* 2px */
+  --border-width-heavy:   calc(var(--border-width-base) * 3);      /* 3px */
+}
+
+:root {
+  --border-style-default: solid;    /* most use cases */
+  --border-style-subtle:  dashed;   /* less common */
 }
 ```
 
 ---
 
-## 5. `theme.css` (entry point)
+## 6. `motion.css`
+
+### Duration — derived from base (single anchor + ratio)
+
+```css
+:root {
+  /* 🔑 ANCHOR — pick the brand tempo */
+  --motion-duration-base: 200ms;   /* try 150 (snappy) / 200 (default) / 300 (leisurely) */
+
+  --motion-duration-instant: calc(var(--motion-duration-base) * 0.5);   /* 100ms */
+  --motion-duration-fast:    calc(var(--motion-duration-base) * 0.75);  /* 150ms */
+  --motion-duration-normal:  var(--motion-duration-base);               /* 200ms */
+  --motion-duration-slow:    calc(var(--motion-duration-base) * 1.5);    /* 300ms */
+  --motion-duration-slower:  calc(var(--motion-duration-base) * 2.5);    /* 500ms */
+}
+```
+
+### Easing (cannot be derived — 3 industry-standard curves)
+
+```css
+:root {
+  --motion-easing-standard:  cubic-bezier(0.4, 0, 0.2, 1);   /* Material standard — most uses */
+  --motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1);     /* entering — ease-out */
+  --motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);     /* leaving — ease-in */
+  --motion-easing-emphasis:  cubic-bezier(0.2, 0, 0, 1);      /* strong entrance / exit */
+  --motion-easing-spring:    cubic-bezier(0.34, 1.56, 0.64, 1); /* iOS-style overshoot */
+}
+```
+
+---
+
+## 7. `theme.css` (entry point)
 
 ```css
 /* 1. Import tokens in this exact order */
@@ -447,6 +588,8 @@ Rules:
 @import './typography.css';
 @import './spacing.css';
 @import './radius.css';
+@import './border.css';
+@import './motion.css';
 
 /* 2. Component tokens (consume primitives) */
 :root {
@@ -469,21 +612,12 @@ Rules:
   --card-border:       var(--color-border-default);
 }
 
-/* 3. Shadow tokens */
+/* 3. Shadow tokens (cannot be cleanly derived — use a small fixed set) */
 :root {
   --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md:      0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-lg:      0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
   --shadow-overlay: 0 25px 50px rgba(0, 0, 0, 0.15);
-}
-
-/* 4. Motion tokens */
-:root {
-  --motion-duration-fast:   150ms;
-  --motion-duration-normal: 200ms;
-  --motion-duration-slow:   300ms;
-  --motion-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --motion-easing-emphasis: cubic-bezier(0.2, 0, 0, 1);
 }
 ```
 
@@ -493,10 +627,13 @@ Rules:
 
 When validating generated tokens, check:
 
-1. **All 5 files exist** and `theme.css` imports the other 4 in order.
+1. **All 7 files exist** and `theme.css` imports the other 6 in order.
 2. **No token is defined twice** in different files.
 3. **Dark mode variant exists** for every semantic color.
-4. **Scale is complete** — every scale has 50 → 900.
+4. **Scale is complete** — every color scale has 50 → 900.
 5. **No raw values in component files** — only `var(--*)` references.
-6. **Type scale is geometric** — each step is ~1.125x–1.25x the previous.
-7. **Spacing is 4-based** — every `space-*` is a multiple of 4px.
+6. **Type scale is geometric** — each step is `--font-size-ratio` from the previous.
+7. **Spacing is base-derived** — every `space-*` is `calc(var(--space-base) * N)`.
+8. **Radius is base-derived** — every `radius-*` is `calc(var(--radius-base) * M)` (except `--radius-full`).
+9. **Anchors are explicit** — `--color-primary-500`, `--space-base`, `--radius-base`, `--font-size-base`/`--font-size-ratio`, `--border-width-base`, `--motion-duration-base` are all defined in `:root`.
+10. **Derivable categories use formulas, not hand-picked values** — re-deriving by changing an anchor should affect the right stops.

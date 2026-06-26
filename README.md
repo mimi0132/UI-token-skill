@@ -423,6 +423,24 @@ console.table(hardcoded)
 
 **改一个 hex,整张调色板重新算**。换主色不痛苦,改间距不痛苦,任何后续调参都是改 1 个值。
 
+### "除了颜色,其他变量也能这么推导吗"
+
+**能,有 6 类可推导变量**,全部用"单锚点 + 数学"自动扩展:
+
+| 变量 | 锚点 | 数学 | 改 1 个值的效果 |
+|---|---|---|---|
+| **颜色** | `--color-primary-500` | `color-mix(in srgb, …, white\|black)` | 整张调色板重算 |
+| **间距** | `--space-base: 4px` | `calc(var(--space-base) * N)` | 整个间距刻度缩放 |
+| **圆角** | `--radius-base: 6px` | `calc(var(--radius-base) * M)` | 整体变锐 / 变柔 |
+| **字号** | `--font-size-base: 16px` + `--font-size-ratio: 1.25` | `calc(var(--font-size-base) * pow(var(--font-size-ratio), N))` | 整个字号阶重新调 |
+| **行高** | `--line-height-base: 1.5` | direct / `calc` | 行高节奏统一调 |
+| **边框宽度** | `--border-width-base: 1px` | `calc(var(--border-width-base) * N)` | 改粗细 |
+| **动效时长** | `--motion-duration-base: 200ms` | `calc(var(--motion-duration-base) * K)` | 整体快 / 慢 |
+
+**改 6-8 个锚点,所有视觉变量重新算**。"想要整体更紧凑" → 改 `--space-base: 4px` → `3px` 一行;"想要 iOS 风格更柔" → 改 `--radius-base: 6px` → `12px` 一行。
+
+**6 类不能推导** — 字体族 / 字重 / 阴影 / 栅格列数 / 断点 / 动效曲线 — 这些用行业固定值或 3-5 个命名 token。
+
 ### "新设计有 5xl 字号,组件库只有 h1-h6"
 
 Agent 会**新增 token + direct CSS 扩展**,不要求你改组件代码:

@@ -145,6 +145,94 @@ because the lib has 40+ color variables and they only gave you 2. The answer is
 
 ---
 
+## Phase 1.6: Multi-Dimension Derivation (color is not the only one)
+
+The "single anchor + math" pattern applies to **6 categories**, not just color.
+Apply the same fill-the-gaps principle to each. Full algorithm + tunable knobs in
+[references/token-spec.md § 0.5](token-spec.md#05-other-derivable-variable-categories).
+
+### Quick reference
+
+| Category        | Anchor(s)                                         | Math                          |
+|-----------------|---------------------------------------------------|-------------------------------|
+| **Color**       | `--color-primary-500` / `-success-500` / etc.     | `color-mix(in srgb, …, white\|black)` |
+| **Spacing**     | `--space-base: 4px` (or 8px)                      | `calc(var(--space-base) * N)` |
+| **Radius**      | `--radius-base: 6px` (or 4px / 12px)              | `calc(var(--radius-base) * M)` |
+| **Font size**   | `--font-size-base: 16px` + `--font-size-ratio: 1.25` | `calc(var(--font-size-base) * pow(var(--font-size-ratio), N))` |
+| **Line height** | `--line-height-base: 1.5`                         | direct value or `calc(...)`     |
+| **Border width**| `--border-width-base: 1px`                        | `calc(var(--border-width-base) * N)` |
+| **Motion dur.** | `--motion-duration-base: 200ms`                   | `calc(var(--motion-duration-base) * K)` |
+
+### "Fill the gaps" for each category
+
+Same rule as color. From the design, extract the anchor(s) the design gives
+explicitly. Derive the rest.
+
+```js
+// Mental model: what does the design typically give?
+const typicalDesignGives = {
+  color:        '1-3 primary stops + 1-2 semantic swatches',  // most common
+  spacing:      '0-3 specific paddings (rest = derive)',         // sparse
+  radius:       '1-2 specific radii (sm/md/lg = derive)',        // sparse
+  fontSize:     'body + 1-2 heading sizes (rest = derive)',      // moderate
+  lineHeight:   'rarely specified, derive or use 1.2/1.5/1.75', // very sparse
+  borderWidth:  'almost never specified, default to 1px',        // absent
+  motion:       'rarely specified, default to 150/200/300',      // absent
+}
+```
+
+**Two categories cannot be derived** — they have multiple dimensions or are
+industry-fixed. For these, use a small named set:
+
+| Category      | Why not derivable                         | What to do                          |
+|---------------|-------------------------------------------|-------------------------------------|
+| Font family   | Design decision, not mathematical         | Pick from design or use a system stack |
+| Font weight   | Industry fixed (400/500/600/700)          | Use the 4 values directly           |
+| Shadow        | 5 dimensions (x, y, blur, spread, color)  | Use 3-5 named tokens (sm/md/lg/overlay) |
+| Grid columns  | Industry fixed (12/16/24)                 | Use the value the design implies    |
+| Breakpoints   | Industry fixed (640/768/1024/1280/1536)   | Use the value the design implies    |
+| Motion easing | 3-4 industry curves                       | Pick from standard set              |
+
+### Worked example: "design only shows 16px body text"
+
+```css
+/* User gave: 16px body */
+:root {
+  --font-size-base:  16px;        /* extracted from design */
+  --font-size-ratio: 1.25;        /* picked: Material major third */
+
+  --font-size-xs:   calc(var(--font-size-base) / var(--font-size-ratio) / var(--font-size-ratio));   /* 10.24 */
+  --font-size-sm:   calc(var(--font-size-base) / var(--font-size-ratio));                            /* 12.8  */
+  --font-size-md:   var(--font-size-base);                                                           /* 16    */
+  --font-size-lg:   calc(var(--font-size-base) * var(--font-size-ratio));                            /* 20    */
+  --font-size-xl:   calc(var(--font-size-base) * var(--font-size-ratio) * var(--font-size-ratio));   /* 25    */
+  /* ... 5xl/6xl auto-derived if needed */
+}
+```
+
+User changes mind → "we want bigger headings": bump `--font-size-ratio: 1.25` → `1.5`. Whole scale re-derives. No touching 10 values.
+
+### Quality gate (multi-dimension version)
+
+Before generating the override file, check all anchors are defined:
+
+```js
+const anchors = [
+  '--color-primary-500', '--color-success-500', '--color-warning-500', '--color-danger-500', '--color-info-500',
+  '--space-base', '--radius-base',
+  '--font-size-base', '--font-size-ratio',
+  '--line-height-base',
+  '--border-width-base',
+  '--motion-duration-base',
+]
+const missing = anchors.filter(a => !getComputedStyle(document.documentElement).getPropertyValue(a).trim())
+if (missing.length) console.error('Missing anchors:', missing)
+```
+
+If any are missing, ask the user OR pick a sensible default from the design source. **Never generate a `colors.css` / `spacing.css` / etc. with hand-picked values for derivable categories.**
+
+---
+
 ## Phase 2: Token Extraction Checklist
 
 When reading the design source, extract the following. **Be concrete, not vague.**
