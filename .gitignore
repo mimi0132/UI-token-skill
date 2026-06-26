@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Agent skill install locations (do NOT commit user-local installs)
+.trae/skills/
+.cursor/skills/
+.claude/skills/
+.codex/skills/
+.github/skills/
+.cline/skills/
+.roo/skills/
+.continue/skills/
+.aider/skills/
+.copilot/skills/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local

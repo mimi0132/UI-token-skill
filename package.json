@@ -1,0 +1,41 @@
+{
+  "name": "ui-design-system-extractor",
+  "version": "1.0.0",
+  "description": "Extracts design tokens from Figma / images / hand-written tokens, generates a component library that can override Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra. Works on every major AI coding agent via npx skills install.",
+  "type": "module",
+  "files": [
+    "SKILL.md",
+    "README.md",
+    "skills/"
+  ],
+  "keywords": [
+    "design-system",
+    "design-tokens",
+    "figma",
+    "ui-components",
+    "agent-skill",
+    "cursor",
+    "claude-code",
+    "trae",
+    "codex",
+    "github-copilot",
+    "cline",
+    "element-plus",
+    "ant-design",
+    "naive-ui",
+    "shadcn",
+    "mui",
+    "chakra-ui",
+    "theme-override"
+  ],
+  "author": "your-github-user",
+  "license": "MIT",
+  "homepage": "https://github.com/your-github-user/ui-design-system-extractor#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-github-user/ui-design-system-extractor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-github-user/ui-design-system-extractor/issues"
+  }
+}
