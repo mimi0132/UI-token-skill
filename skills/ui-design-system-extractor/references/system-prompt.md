@@ -1,112 +1,211 @@
-# System Prompt Reference
+# System Prompt — Extraction Checklist & Quality Gate
 
-This file is the "design philosophy" that the agent should keep in mind while extracting
-tokens and writing components. Load it when the user asks "why this token?" or "is this
-choice correct?".
-
----
-
-## Design Analysis Process
-
-### Step 1: Design Token Extraction
-
-From the source, extract these visual features with **concrete values**, never vague
-descriptions:
-
-| Token Type    | Extract                                                        | Example                                  |
-|---------------|----------------------------------------------------------------|------------------------------------------|
-| **Colors**    | Primary, background, text, border, semantic (success/warning/danger/info) | Primary: `#6366F1` / Bg: `#FFFFFF`     |
-| **Radius**    | sm / md / lg / full in concrete px                            | Button: `6px` / Card: `12px` / Input: `8px` |
-| **Shadow**    | Precise `box-shadow` values (light/medium/heavy/overlay)      | `0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)` |
-| **Spacing**   | Component padding, element gap                                | Button padding: `10px 16px` / Gap: `8px` |
-| **Typography**| Size, weight, family, line-height                             | Body: `14px/500` / Heading: `16px/600`   |
-| **Glass**     | `backdrop-blur` value, opacity                                 | `backdrop-blur(12px)` / `bg-white/80`    |
-| **Motion**    | Transition duration, easing                                    | `transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1)` |
-
-### Step 2: Component Inference
-
-A complete component library is **more than** what's visible in the design. Common
-inference rules:
-
-| Visible in Design       | Must Generate                                             |
-|-------------------------|-----------------------------------------------------------|
-| Any button              | Button (all variants) + IconButton                        |
-| Input field             | Input (all states) + Textarea                             |
-| Card container          | Card (all variants) + Paper                               |
-| Tag / Badge             | Badge (all variants)                                      |
-| User avatar             | Avatar (all variants) + AvatarGroup                       |
-| Divider                 | Divider                                                   |
-| List item               | List, ListItem                                            |
-| Modal / Dialog          | Modal (all variants)                                      |
-| Tooltip                 | Tooltip (all placements)                                  |
-| Navigation              | Navbar, Tabs                                              |
-| Form                    | Checkbox, Switch, Radio, Select                           |
-| Table                   | Table (pagination + sort + filter)                        |
-| Loading                 | Spinner, Skeleton                                         |
-| Empty state             | Empty (all variants)                                      |
-
-### Step 3: File Output
-
-Each component goes into its own file, marked with delimiters for parsing:
-
-```
-<!-- FILE_START: Button.vue -->
-<!-- FILE_END: Button.vue -->
-```
-
-**NEVER** wrap in markdown code fences (` ``` `).
-
-### Step 4: Browser Preview
-
-Components go into `src/components/ui/{name}.vue` or `.tsx`, plus a `preview.html` that
-renders:
-
-1. **Color palette** (colors.css) — swatches with HEX + click-to-copy
-2. **Typography spec** (typography.css) — sample text per size/weight
-3. **Spacing & radius** (spacing.css + radius.css) — visual bars + rounded rects
-4. **Grid system** (theme.css) — 12-col overlay, 5 breakpoints
-5. **Component list** — one card per component, each card embeds its `<DEMO>` block
+This file is the agent's "second brain" during the override workflow. Load it during
+Step 1 (extraction) and Step 5 (verification).
 
 ---
 
-## Design Principles
+## Mindset
 
-1. **Token-first, never hard-code.** Every color, size, gap, radius in a component file
-   must reference a CSS variable from the 5 token files. This is what makes the library
-   overridable.
+You are **NOT** building a component library. You are **NOT** writing new components.
+You are producing a **single CSS override file** that, when imported into a project that
+uses an existing component library, changes the visual style of every existing component
+in that project.
 
-2. **DEMO block per component.** A component without a demo block showing all its
-   variants is incomplete. The preview page parses these blocks; they're also the
-   spec for what the component must support.
-
-3. **Match the base library's API.** If the user wants Element Plus override, generate
-   `<el-button>`-shaped components, not bespoke `<MyButton>`. Override, don't replace.
-
-4. **Semantic naming over visual naming.** Use `--color-primary-500`, not `--blue-500`.
-   Use `--button-bg`, not `--button-blue-bg`. The rename happens at the consumer side.
-
-5. **Dark mode is mandatory.** Every token must have a `[data-theme="dark"]` variant. Use
-   `color-mix(in srgb, var(--color-*) var(--alpha), transparent)` for tints/shades
-   instead of hand-rolled HEX variations.
-
-6. **No silent framework choice.** Always ask at Step 0. Default if user is unclear:
-   Vue 3 + Element Plus (most common), then React + shadcn (most common).
+If at any point you feel the urge to write a `Button.vue` or `Button.tsx` — **stop**. The
+user wants to keep their existing code. They just want it to look different.
 
 ---
 
-## Quality Gate (run before declaring done)
+## Phase 1: Pre-Work (Always Do)
+
+Before touching any file, confirm:
+
+- [ ] **The user has an existing component library.** If not, this skill does not apply.
+      Ask "你项目里现在用的是哪个组件库?" and stop until you have an answer.
+- [ ] **You know the design source.** Figma URL / local image path / hand-written tokens file.
+- [ ] **You know the override scope.** Full re-skin / color only / custom (user specifies).
+- [ ] **You know the target library version.** Element Plus 2.x vs 1.x have different
+      variable names. Ask if unclear.
+
+If any of these is missing, ask. Do not guess.
+
+---
+
+## Phase 2: Token Extraction Checklist
+
+When reading the design source, extract the following. **Be concrete, not vague.**
+
+### Colors
+
+| What to look for     | Where to find it                          | Variable             |
+|----------------------|-------------------------------------------|----------------------|
+| Primary brand color  | Buttons, links, focus rings               | `--color-primary-500` |
+| Primary tints/shades | Hover/active states of primary            | `--color-primary-{50,100,200,300,400,600,700,800,900}` |
+| Neutral grays        | Body text, borders, dividers, surfaces    | `--color-neutral-{50...900}` |
+| Success              | Success toasts, "OK" badges, valid input  | `--color-success-{50...700}` |
+| Warning              | Warning toasts, "caution" indicators      | `--color-warning-{50...700}` |
+| Danger / Error       | Error states, destructive buttons         | `--color-danger-{50...700}` |
+| Info                 | Info toasts, neutral notifications        | `--color-info-{50...700}` |
+| Background surfaces  | Page background, card background          | `--color-bg-{primary,secondary,elevated}` |
+| Text colors          | Body, headings, captions, disabled        | `--color-text-{primary,secondary,disabled,inverse}` |
+| Borders              | Default, strong, subtle                   | `--color-border-{default,strong,subtle}` |
+
+**Rule**: If Figma only gives you the 500 stop, derive the rest using
+`color-mix(in srgb, var(--color-primary-500) X%, white|black)`. Do not hand-pick hex
+values for 50/100/200 — use the math.
+
+### Typography
+
+| What to look for | Where to find it       | Variable           |
+|------------------|------------------------|--------------------|
+| Heading font     | Largest text on screen | `--font-family-heading` |
+| Body font        | Paragraphs, buttons    | `--font-family-body` |
+| Mono font        | Code blocks            | `--font-family-mono` |
+| Body size        | Default paragraph      | `--font-size-md` (16px) |
+| Sizes            | H1-H6 hierarchy        | `--font-size-{xs,sm,md,lg,xl,2xl,3xl,4xl}` |
+| Weights          | regular / medium / semibold / bold | `--font-weight-{regular,medium,semibold,bold}` |
+| Line heights     | heading / body / long-form | `--line-height-{tight,normal,relaxed}` |
+
+### Spacing
+
+| What to look for | Where to find it           | Variable        |
+|------------------|----------------------------|-----------------|
+| Component padding | Button / input padding   | `--space-2` to `--space-4` |
+| Element gap       | Between buttons in a group | `--space-2` to `--space-4` |
+| Section gap       | Between form sections     | `--space-8` to `--space-16` |
+| Page padding      | Outer page margins        | `--space-6` to `--space-12` |
+
+**Rule**: Round everything to a multiple of 4. If the design says 13px padding, use 12.
+
+### Radius
+
+| What to look for | Where to find it        | Variable       |
+|------------------|------------------------|----------------|
+| Sharp / 0        | Some enterprise UIs    | `--radius-none` |
+| Subtle           | Inputs, tags           | `--radius-sm` (2-4px) |
+| Standard         | Buttons, cards, modals | `--radius-md` (6-8px) |
+| Pronounced       | Hero cards, large CTAs | `--radius-lg` (12-16px) |
+| Pill             | Avatars, tags, status  | `--radius-full` (9999px) |
+
+### Shadow
+
+| What to look for | Where to find it          | Variable       |
+|------------------|--------------------------|----------------|
+| Subtle           | Input borders, resting   | `--shadow-sm` |
+| Standard         | Buttons, cards, hover    | `--shadow-md` |
+| Pronounced       | Dropdowns, popovers      | `--shadow-lg` |
+| Overlay          | Modals, dialogs          | `--shadow-overlay` |
+
+---
+
+## Phase 3: Override File Checklist
+
+Before writing `overrides/<lib>-theme-override.css`, read the corresponding section of
+[references/override-patterns.md](override-patterns.md) and verify these are covered:
+
+- [ ] **All primary light/dark stops** (`--<lib>-color-primary-light-3/5/7/8/9` and
+      `--<lib>-color-primary-dark-2`). Missing any of these causes hover/active state
+      color drift — the most common visual bug.
+- [ ] **All semantic colors** (success / warning / danger / info), each with their
+      light/dark variants if the lib uses them.
+- [ ] **All radius variables** that the lib exposes (e.g. Element Plus has
+      `--el-border-radius-base` / `--el-border-radius-small` / `--el-border-radius-round`).
+- [ ] **All text color variables** (primary, regular, secondary, placeholder, disabled).
+- [ ] **All background variables** (page, surface, container, overlay).
+- [ ] **All border color variables** (default, light, lighter, extra-light, dark).
+- [ ] **Font family** at minimum.
+- [ ] **Dark mode variant** in `[data-theme="dark"]` block.
+
+A "complete" override for Element Plus is ~80 lines of CSS. Don't be tempted to trim
+it down — every variable exists for a reason.
+
+---
+
+## Phase 4: Preview Checklist
+
+The preview page is the user's acceptance test. Before declaring done, verify:
+
+- [ ] Preview loads without console errors
+- [ ] Target component library CSS is loaded (CDN or local)
+- [ ] Override file is loaded **after** the lib's CSS
+- [ ] At least 5 common components are visible: **Button, Input, Tag, Card, Dialog/Modal**
+- [ ] Each component shows at least: default, hover, disabled, active states
+- [ ] Color tokens are visible as swatches (with token names + HEX)
+- [ ] Typography tokens are visible as labeled samples
+- [ ] Dark mode toggle works (button to flip `data-theme`)
+- [ ] Preview works in Chrome / Safari / Firefox (if cross-browser is a concern)
+
+---
+
+## Phase 5: README Checklist
+
+The README must answer, in this order:
+
+1. **3-line integration** (copy-paste ready)
+2. **One line of HTML/JS for dark mode toggle**
+3. **One line for how to change a token** ("改 `tokens/colors.css` 里的 `--color-primary-500`")
+4. **A list of what was NOT overridden** (e.g. "字体、间距沿用原样,因为你选了只换颜色")
+5. **Troubleshooting** (the 3 most common issues, see below)
+
+### Top 3 Troubleshooting Issues
+
+| Problem                                          | Cause                                          | Fix                                                |
+|--------------------------------------------------|------------------------------------------------|----------------------------------------------------|
+| "我改了 token 颜色但组件没变"                   | Override 引入顺序错了                          | 确保先引 lib 的 CSS,再引 `theme.css`,再引 override |
+| "暗色模式不切换"                                 | 切换按钮没改 `data-theme` 属性                | `document.documentElement.setAttribute('data-theme', 'dark')` |
+| "某个组件不响应"                                  | 该组件用了 hardcoded 颜色,不在 CSS 变量体系里 | 用 DevTools 看 computed style,提 issue             |
+
+---
+
+## Quality Gate (Run Before Declaring Done)
 
 ```bash
-# 1. No hard-coded hex in components
-! grep -rE "#[0-9a-fA-F]{3,8}" components/ tokens/
+# 1. Five token files exist
+test -f tokens/theme.css && \
+test -f tokens/colors.css && \
+test -f tokens/typography.css && \
+test -f tokens/spacing.css && \
+test -f tokens/radius.css
 
-# 2. No hard-coded px in components
-! grep -rE "[0-9]+px" components/
+# 2. Override file exists and imports tokens
+test -f overrides/<lib>-theme-override.css && \
+grep -q "@import" overrides/<lib>-theme-override.css
 
-# 3. Every component has a DEMO block
-for f in components/*.{vue,tsx}; do
-  grep -q "DEMO_START" "$f" || echo "MISSING DEMO: $f"
-done
+# 3. No raw hex anywhere in override (everything should be var(--*))
+! grep -E "#[0-9a-fA-F]{3,8}" overrides/<lib>-theme-override.css
+
+# 4. No raw px in override
+! grep -E "[0-9]+px" overrides/<lib>-theme-override.css
+
+# 5. No raw hex in tokens EXCEPT for the 50-900 color scales (where
+#    the base 500+ is defined explicitly; lighter/darker shades must
+#    be color-mix derivations, not hand-rolled hex)
+grep -E "color-mix\(in srgb" tokens/colors.css
+
+# 6. Dark mode block exists
+grep -q "data-theme" overrides/<lib>-theme-override.css
+
+# 7. Preview file exists
+test -f preview/preview.html
+
+# 8. README has integration snippet
+grep -q "import" README.md
 ```
 
 If any check fails, fix before outputting.
+
+---
+
+## Self-Check Questions
+
+Before responding to the user with "done", ask yourself:
+
+1. Did I write any `.vue` or `.tsx` file? **If yes, delete it.** This skill is theme override only.
+2. Did I cover all light/dark variants of the primary color? **If no, add them.**
+3. Did I generate a preview that the user can open in a browser? **If no, generate one.**
+4. Could a user copy 3 lines from the README and have it work? **If no, simplify.**
+5. Did I assume the user's component library instead of asking? **If yes, re-ask.**
+
+If all 5 pass, output the result with a short summary of what was generated and the
+exact integration snippet.

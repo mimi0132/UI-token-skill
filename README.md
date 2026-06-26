@@ -1,41 +1,74 @@
-# UI Design System Extractor
+# UI Design System Extractor — Theme Override
 
 <div align="center">
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Skill](https://img.shields.io/badge/skill-v1.0.0-blue.svg)](skills/ui-design-system-extractor/SKILL.md)
 
-**从设计稿一键生成可覆盖现有组件库样式的设计系统**
+**从设计稿一键给现有组件库换肤 — 不改任何组件代码**
 
 </div>
 
-从设计稿 (Figma / 本地图片 / 手写 tokens) 一键生成完整的设计系统 + 组件库,输出
-的 CSS 变量可直接覆盖 Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra
-等主流组件库,达到与设计稿 100% 视觉一致。
+你的项目已经在用 Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra。
+你想让它**看起来像新的设计稿**,但**不想改任何组件代码**。
 
-兼容 **所有主流 AI 编程工具** (Trae / Cursor / Claude Code / Codex / GitHub Copilot
-/ Cline / Roo Code)。
+这个 skill 帮你做这件事:从设计稿提取视觉 token(颜色 / 圆角 / 阴影 / 字体 / 间距),
+生成 **1 个 CSS 覆盖文件**,引入到项目里,所有现有组件自动变脸。
+
+兼容 **所有主流 AI 编程工具** (Trae / Cursor / Claude Code / Codex / Copilot / Cline / Roo Code)。
+
+---
+
+## 🎯 这个 skill 做什么
+
+> **1. 提取** — 从 Figma 链接 / 设计图 / 手写 tokens 读出所有视觉变量
+> **2. 生成** — 1 个 CSS 覆盖文件,把你项目的所有现有组件按新设计稿重新着色
+> **3. 集成** — `import` 1 行,搞定
+
+### 它做(只做)这一件事
+
+给一个用 Element Plus 的 Vue 3 项目换皮肤 — 1 个 CSS 文件,搞定:
+
+```diff
+  // main.ts
+  import 'element-plus/dist/index.css'
++ import './ui-theme/overrides/element-plus-theme-override.css'
+
+  // 你原来的代码一行不用动
+  // <el-button> / <el-input> / <el-dialog> 自动变脸
+```
+
+### 它不做什么
+
+- ❌ **不**生成新组件 (Button.vue / Button.tsx / 等等)
+- ❌ **不**修改你已有的任何代码
+- ❌ **不**改 API / props / 用法
+- ❌ **不**调整布局 / 间距 / 文案
+- ❌ **不**引入新的组件库
+
+只改样式。**只改样式。**
+
+---
 
 ## ✨ 特性
 
-- **多源输入**: Figma 链接、本地设计稿图片、手写 Design Tokens (JSON / CSS / W3C)
-- **5 个 token 文件**: theme / colors / typography / spacing / radius,完全可独立覆盖
-- **8+ 组件库**: Button / Input / Card / Modal / Select / Tag / Avatar / Tooltip 等,每个自带 DEMO 块
-- **样式覆盖**: 一键生成 `<lib>-theme-override.css`,覆盖现有组件库视觉
-- **框架可选**: Vue 3 / React / 框架无关
-- **三种模式**: `--full` / `--style-only` / `--doc`
-- **暗色模式**: 强制要求所有 token 有 dark variant
-- **多 Agent 兼容**: 一个 SKILL.md,所有 AI 编程工具都能用
+- **多源输入** — Figma 链接、本地图片、手写 Design Tokens (JSON / CSS / W3C)
+- **完整 token 体系** — 颜色、字体、间距、圆角、阴影,独立可改
+- **8 个组件库开箱即用** — Element Plus、Ant Design、Ant Design Vue、Naive UI、shadcn/ui、MUI、Chakra UI、Vuetify
+- **1 个文件,3 行集成** — 复制粘贴 1 行 import,搞定
+- **暗色模式** — `[data-theme="dark"]` 切换,默认生成
+- **可二次调参** — 改一个 hex,全局生效
+- **多 Agent 兼容** — 一个 SKILL.md,所有 AI 编程工具都能用
+
+---
 
 ## 🚀 安装
 
-### 一键安装 (推荐)
+### 一键安装(推荐)
 
 ```bash
 npx skills add <your-github-user>/ui-design-system-extractor --all
 ```
-
-`--all` 自动检测本机所有 AI 编程工具并安装,无需手动选择。
 
 ### 自定义安装
 
@@ -47,9 +80,9 @@ npx skills add <your-github-user>/ui-design-system-extractor -a claude-code -a c
 npx skills add <your-github-user>/ui-design-system-extractor -g -y
 ```
 
-### 手动安装 (无 CLI)
+### 手动安装
 
-把 `skills/ui-design-system-extractor/` 复制到你的 Agent 的 skills 目录:
+把 `skills/ui-design-system-extractor/` 复制到 Agent 的 skills 目录:
 
 | Agent          | 复制到                                  |
 |----------------|-----------------------------------------|
@@ -67,90 +100,179 @@ npx skills add <your-github-user>/ui-design-system-extractor -g -y
 
 ```
 Read https://raw.githubusercontent.com/<your-github-user>/ui-design-system-extractor/main/skills/ui-design-system-extractor/SKILL.md
+
+帮我把这个 Figma 设计稿 [URL] 提取出视觉 token,生成 Element Plus 的样式覆盖文件
 ```
 
 ---
 
 ## 📖 使用示例
 
-### Figma → Vue 3 + Element Plus
+### Figma → Element Plus 换肤
 
 ```
 我有一个 Figma 设计稿: https://www.figma.com/design/xxx/MyApp
-帮我生成 Vue 3 组件库,风格统一到 Element Plus
+我的项目是 Vue 3 + Element Plus
+帮我提取设计稿的视觉 token,生成一个能覆盖 Element Plus 样式的 CSS 文件
 ```
 
-Agent 会自动完成:
-1. 调用 Figma MCP 提取所有节点的样式数据
-2. 推导完整 Design Token 体系 (颜色/字体/间距/圆角/阴影)
-3. 生成 5 个 token CSS 文件
-4. 生成 8+ Vue 组件 (匹配 Element Plus API)
-5. 生成 `element-plus-theme-override.css` 一键覆盖
-6. 输出预览页面 (颜色库 → 字体 → 间距/圆角 → 栅格 → 组件列表)
+Agent 会:
+1. 调用 Figma MCP 提取所有节点的颜色、圆角、阴影、字体
+2. 输出 5 个 token CSS 文件(`tokens/theme.css` 等)
+3. 输出 `overrides/element-plus-theme-override.css`(约 80 行)
+4. 输出一份预览页,你能在浏览器里看效果
+5. 给一份 README,告诉你怎么集成
 
-### 本地设计稿 → React + shadcn
-
-```
-把这张设计图 /Users/me/dashboard.png 做成 React 组件库,能覆盖 shadcn
-```
-
-### 手写 tokens → 纯样式覆盖
+### 本地设计图 → Ant Design 换肤
 
 ```
-我有一份 design-tokens.json,想覆盖 Ant Design 的样式,不要生成组件
+这是设计图 /Users/me/dashboard.png
+我的项目是 React + Ant Design 5
+帮我做 Ant Design 5 的样式覆盖,只换颜色和圆角,字体保持不变
 ```
 
-Agent 进入 `--style-only` 模式,只输出 5 个 token 文件 + `antd-theme-override.css`。
+### 手写 tokens → Naive UI 换肤
+
+```
+我有一份 design-tokens.json:
+
+{
+  "color": { "primary": { "500": "#6366F1" } },
+  "radius": { "md": "12px" }
+}
+
+我的项目是 Naive UI,只换颜色和圆角,其它保持默认。
+```
+
+### 仅换颜色(最轻量)
+
+```
+只换颜色,其它全部沿用 Element Plus 默认
+```
+
+### 暗色模式
+
+```
+除了亮色主题,再生成一个暗色模式
+```
 
 ---
 
 ## 🎨 输出结构
 
 ```
-ui-design-system-extractor/
+ui-theme/
 ├── tokens/
-│   ├── theme.css          # 入口 + 组件 token
-│   ├── colors.css         # 颜色库 (primary/secondary/neutral/semantic)
-│   ├── typography.css     # 字体系统 (family/size/weight/line-height)
-│   ├── spacing.css        # 间距 (4px 基础 + 语义)
-│   └── radius.css         # 圆角 (sm/md/lg/xl/full)
-├── components/            # 8+ 组件,匹配基础库 API
-│   ├── Button.vue
-│   ├── Input.vue
-│   ├── Card.vue
-│   └── ...
-├── overrides/             # 样式覆盖
-│   └── <lib>-theme-override.css
-├── preview/               # 预览页
-│   └── preview.html
-├── index.ts
-├── README.md
-└── design-spec.md         # --doc 模式才有
+│   ├── theme.css                # 入口文件,@import 其他 4 个
+│   ├── colors.css               # 主色/中性/语义/背景/文字/边框
+│   ├── typography.css           # 字体族/字号/字重/行高
+│   ├── spacing.css              # 4px 基础 + 语义
+│   ├── radius.css               # 圆角刻度
+│   └── shadow.css               # 阴影刻度
+├── overrides/
+│   └── <lib>-theme-override.css # ⭐ 主输出,1 个文件
+├── preview/
+│   └── preview.html             # 浏览器预览,验收用
+└── README.md                    # 集成说明 + 调参指南
+```
+
+5 个 token 文件是**透明的中间产物** — 让你能看清、来回改。
+**真正部署只需要 1 个 `overrides/<lib>-theme-override.css`。**
+
+---
+
+## 🔌 集成示例
+
+### Element Plus (Vue 3)
+
+```ts
+// main.ts
+import { createApp } from 'vue'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+import './ui-theme/overrides/element-plus-theme-override.css'  // 👈 这一行
+import App from './App.vue'
+
+createApp(App).use(ElementPlus).mount('#app')
+```
+
+### Ant Design (React)
+
+```tsx
+// main.tsx
+import 'antd/dist/reset.css'
+import './ui-theme/overrides/antd-theme-override.css'  // 👈 这一行
+import { ConfigProvider } from 'antd'
+
+export function App() {
+  return <ConfigProvider><Router /></ConfigProvider>
+}
+```
+
+### shadcn/ui (React + Tailwind)
+
+```tsx
+// main.tsx
+import './ui-theme/overrides/shadcn-theme-override.css'  // 👈 这一行
+import './globals.css'
+```
+
+### Naive UI (Vue 3)
+
+```vue
+<!-- App.vue -->
+<script setup lang="ts">
+import { NConfigProvider } from 'naive-ui'
+import { themeOverrides } from './naive-theme'  // 见 references/override-patterns.md
+import './ui-theme/tokens/theme.css'
+</script>
+
+<template>
+  <NConfigProvider :theme-overrides="themeOverrides">
+    <router-view />
+  </NConfigProvider>
+</template>
 ```
 
 ---
 
-## 🛠 CLI 模式
+## 🎨 调参
 
-| 开关              | 用途                                          |
-|-------------------|-----------------------------------------------|
-| `--full`          | 默认。tokens + 组件 + 预览 + README            |
-| `--style-only`    | 只输出 5 个 token 文件 + 覆盖指南             |
-| `--doc`           | `--full` + `design-spec.md` 文档              |
-| `--framework vue` | Vue 3 输出 (默认)                              |
-| `--framework react` | React 输出                                   |
-| `--base-lib`      | `element-plus` / `antd` / `naive-ui` / `shadcn` / `mui` / `chakra` / `none` |
+集成完之后,改设计只需要改 token 文件:
 
-**典型用法**:
-
-```bash
-# 第一次:先只出设计 Token 给设计师确认
-npx skills add <user>/ui-design-system-extractor --all
-# 然后在 AI 中: "根据 figma xxx 输出 --style-only"
-
-# 设计师确认后:出完整组件库 + 设计文档
-"按刚才的 tokens,生成完整组件库, --doc"
+```css
+/* tokens/colors.css */
+:root {
+  --color-primary-500: #6366F1;  /* 改这个,所有按钮、链接、焦点色都跟着变 */
+}
 ```
+
+改完 token,刷新页面,所有使用 `--color-primary-500` 的地方自动更新。**不需要改任何组件代码。**
+
+### 暗色模式切换
+
+```js
+// 任何地方
+document.documentElement.setAttribute('data-theme', 'dark')   // 开
+document.documentElement.setAttribute('data-theme', 'light')  // 关
+```
+
+---
+
+## 🧰 支持的组件库
+
+| 库                | 框架       | 覆盖度    | 备注                             |
+|-------------------|------------|----------|----------------------------------|
+| **Element Plus**  | Vue 3      | ⭐⭐⭐⭐⭐  | 完整覆盖,推荐 Vue 项目首选       |
+| **Ant Design**    | React      | ⭐⭐⭐⭐⭐  | 完整覆盖,推荐 React 项目首选     |
+| **Ant Design Vue**| Vue 3      | ⭐⭐⭐⭐   | 完整覆盖                          |
+| **Naive UI**      | Vue 3      | ⭐⭐⭐⭐   | JS theme overrides 路径更完整    |
+| **shadcn/ui**     | React      | ⭐⭐⭐⭐   | 注意 HSL 格式要求                |
+| **MUI**           | React      | ⭐⭐⭐    | v6 / Joy UI 完整;v5 受 var() 限制 |
+| **Chakra UI**     | React      | ⭐⭐⭐⭐   | semanticTokens 完整              |
+| **Vuetify**       | Vue 3      | ⭐⭐⭐⭐   | 完整覆盖                          |
+| Bootstrap         | -          | ❌        | 没有 CSS 变量体系,不适用        |
+| Foundation        | -          | ❌        | 没有 CSS 变量体系,不适用        |
 
 ---
 
@@ -172,13 +294,51 @@ npx skills add <user>/ui-design-system-extractor --all
 
 ---
 
+## 🛠 常见问题
+
+### "我改了 token 颜色但组件没变"
+
+引入顺序错了。必须先引组件库的 CSS,再引覆盖文件:
+
+```ts
+// ✅ 正确
+import 'element-plus/dist/index.css'
+import './ui-theme/overrides/element-plus-theme-override.css'
+
+// ❌ 错误
+import './ui-theme/overrides/element-plus-theme-override.css'
+import 'element-plus/dist/index.css'
+```
+
+### "暗色模式不切换"
+
+切换按钮要操作 `data-theme` 属性,不是改 class:
+
+```js
+// ✅ 正确
+document.documentElement.setAttribute('data-theme', 'dark')
+
+// ❌ 错误
+document.documentElement.classList.add('dark')
+```
+
+### "某个组件不响应"
+
+有些组件用了 hardcoded 颜色,不在 CSS 变量体系里。打开 DevTools 看 computed style,提 issue。
+
+### "我想保留字体和间距,只换颜色和圆角"
+
+告诉 Agent "只换颜色和圆角,其它保持默认" — 它会跳过对应的 token 文件,只输出与颜色 / 圆角相关的 CSS 变量。
+
+---
+
 ## 📐 设计原则
 
-1. **Token 优先** — 组件中不出现任何硬编码颜色 / px,全部引用 token
-2. **每个组件自带 DEMO** — 预览页直接解析 `<DEMO_START>...</DEMO_START>`
-3. **API 匹配基础库** — Element Plus 风格就输出 `<el-button>`,不输出 `<MyButton>`
-4. **暗色模式必备** — 所有 token 都要有 `[data-theme="dark"]` 变体
-5. **强制分离 5 个 token 文件** — 颜色和字体绝不能合并到 theme.css
+1. **1 个文件搞定** — 主输出是 `overrides/<lib>-theme-override.css`,其它都是辅助
+2. **5 个 token 文件透明** — 颜色 / 字体 / 间距 / 圆角 / 阴影独立可改
+3. **不写新组件** — 永远不输出 `.vue` / `.tsx` / `.jsx` 业务组件
+4. **API 完全不变** — 你的 `<el-button>` 仍然是 `<el-button>`,只是颜色变了
+5. **覆盖所有变体** — light/dark 都要有,primary 的 light-3/5/7/8/9/dark-2 都要有
 
 ---
 
@@ -186,35 +346,13 @@ npx skills add <user>/ui-design-system-extractor --all
 
 - [SKILL.md (安装版)](skills/ui-design-system-extractor/SKILL.md) — Agent 加载的完整指令
 - [Installation Reference](skills/ui-design-system-extractor/references/installation.md) — 按 Agent 详细安装
-- [System Prompt Reference](skills/ui-design-system-extractor/references/system-prompt.md) — 设计哲学与质量门
-- [Token Specification](skills/ui-design-system-extractor/references/token-spec.md) — 详细 token 规范
-- [Override Patterns](skills/ui-design-system-extractor/references/override-patterns.md) — 各 UI 库的 CSS 变量映射
-- [Figma Extraction](skills/ui-design-system-extractor/references/figma-extraction.md) — Figma MCP 使用
+- [System Prompt Reference](skills/ui-design-system-extractor/references/system-prompt.md) — 提取检查表与质量门
+- [Token Specification](skills/ui-design-system-extractor/references/token-spec.md) — 5 个 token 文件的详细规范
+- [Override Patterns](skills/ui-design-system-extractor/references/override-patterns.md) — 各 UI 库的完整 CSS 变量映射(主输出参考)
+- [Figma Extraction](skills/ui-design-system-extractor/references/figma-extraction.md) — Figma MCP 使用方法
 
 ---
 
-## 📦 项目结构
+## 📄 许可证
 
-```
-.
-├── SKILL.md                                # 仓库根目录 (GitHub 显示)
-├── README.md
-├── package.json
-├── .gitignore
-├── LICENSE
-└── skills/
-    └── ui-design-system-extractor/
-        ├── SKILL.md                        # 完整安装版
-        └── references/
-            ├── installation.md
-            ├── system-prompt.md
-            ├── token-spec.md
-            ├── override-patterns.md
-            └── figma-extraction.md
-```
-
----
-
-## 📄 License
-
-MIT
+MIT © UI Design System Extractor Contributors

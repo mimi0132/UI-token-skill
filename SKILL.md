@@ -1,12 +1,16 @@
 ---
 name: "ui-design-system-extractor"
-description: "Extracts design tokens (colors, typography, spacing, components) from Figma files, local design images, or hand-written tokens, then generates a component library that can override the styles of an existing component library (Element Plus / Ant Design / Naive UI / shadcn, etc.) to achieve visual consistency with the source design. Invoke when user provides a design source and wants a styled, ready-to-use component library matching that design, or wants to override an existing UI library's theme to match a design."
+description: "Extracts visual design tokens (colors, typography, spacing, radius, shadow) from a design source (Figma / image / hand-written tokens), then generates a single CSS override file that maps those tokens onto an existing component library's CSS variables (Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra) to re-skin the existing library without changing any component code. Invoke when user has an existing component library and wants to change only its visual style to match a new design."
 ---
 
-# UI Design System Extractor
+# UI Design System Extractor — Theme Override
 
-End-to-end pipeline: **Design Source → Design Tokens → Component Library → Style Override**.
-Works on **every major AI coding agent** (Cursor, Claude Code, Trae, Codex, GitHub Copilot, Cline, Roo Code …).
+> **Single purpose**: 给现有的组件库换一套视觉风格,不改任何组件代码。
+>
+> **它做什么**: 从设计稿提取视觉 token,生成一个 CSS 文件,把这个 CSS 文件
+> 引入到用户项目,所有现有的 `<el-button>` / `<Button>` / shadcn 组件自动变脸。
+>
+> **它不做什么**: 不生成新组件、不改 API、不动用户已有代码。
 
 ## 安装
 
@@ -14,49 +18,82 @@ Works on **every major AI coding agent** (Cursor, Claude Code, Trae, Codex, GitH
 npx skills add YOUR_GITHUB_USER/ui-design-system-extractor --all
 ```
 
-`--all` 自动检测本机所有 AI 编程工具，把技能装到所有检测到的 Agent,无需手动选择。
+`--all` 自动检测本机所有 AI 编程工具并安装,无需手动选择。
+详见 [skills/ui-design-system-extractor/SKILL.md](skills/ui-design-system-extractor/SKILL.md)
 
-> 详细安装方式 (按 Agent 选择 / 全局 / 手动) 见 [skills/ui-design-system-extractor/SKILL.md](skills/ui-design-system-extractor/SKILL.md)
+## 典型场景
 
-## 核心能力
+你已经在用 **Element Plus / Ant Design / shadcn / Naive UI** 等组件库,代码里写满了 `<el-button>` / `<Button>`,你拿到一张设计稿 / Figma 文件 / 颜色规范,**只想换风格,不想动组件代码** —— 用这个 skill。
 
-- **多源输入**: Figma 链接 / 本地设计稿图片 / 手写 Design Tokens (JSON / CSS / W3C)
-- **完整 token 体系**: colors / typography / spacing / radius / theme,5 个独立 CSS 文件
-- **组件库生成**: 8+ 组件 (Button / Input / Card / Modal / Select / Tag / Avatar / Tooltip …),每个自带 `<DEMO>` 块
-- **样式覆盖**: 输出的 CSS 变量可直接覆盖 Element Plus / Ant Design / Naive UI / shadcn 等
-- **框架可选**: Vue 3 / React / 框架无关
-- **CLI 模式**: `--full` / `--style-only` / `--doc` / `--framework` / `--base-lib`
+## 它帮你做的事
 
-## 工作流程 (概览)
+1. **读懂设计稿** — 从 Figma / 图片 / tokens 提取颜色、字体、间距、圆角、阴影
+2. **整理成 5 个 token 文件** — colors / typography / spacing / radius / theme
+3. **生成 1 个 override CSS** — 把设计 token 映射到你现有组件库的 CSS 变量
+4. **生成预览页** — 你能立刻看到新风格套到现有组件上是什么效果
+5. **告诉你怎么集成** — 一行 import,完事
 
-1. **澄清目标**: 框架 + 基础组件库 + 输出模式
-2. **提取 tokens**: 5 个 token 文件 (theme → colors → typography → spacing → radius)
-3. **生成组件**: 每个组件匹配基础库的 API,样式只引用 token
-4. **样式覆盖**: 生成 `<lib>-theme-override.css` 把基础库 CSS 变量映射到设计 token
-5. **预览页**: 颜色库 → 字体 → 间距/圆角 → 栅格 → 组件列表
-6. **验证**: 零硬编码颜色 / 零硬编码 px / 每个组件含 DEMO
-
-完整流程见 [skills/ui-design-system-extractor/SKILL.md](skills/ui-design-system-extractor/SKILL.md)
-
-## 使用示例
+## 输出长什么样
 
 ```
-我有一个 Figma 设计稿: https://www.figma.com/design/xxx/MyApp
-帮我生成 Vue 3 组件库,风格统一到 Element Plus
+output/
+├── tokens/
+│   ├── theme.css             # 入口,组件层 token
+│   ├── colors.css            # 颜色库 (primary/neutral/semantic, 50-900)
+│   ├── typography.css        # 字体系统
+│   ├── spacing.css           # 间距 (4px 基准)
+│   └── radius.css            # 圆角
+├── overrides/
+│   └── element-plus-theme-override.css    ← 唯一要导入的文件
+├── preview/
+│   └── preview.html          # 打开就能看到新风格
+└── README.md                 # 集成说明
 ```
 
-Agent 会自动完成: 调用 Figma MCP 提取数据 → 生成 5 个 token 文件 → 生成 8+ 组件 → 生成 Element Plus 主题覆盖 CSS → 输出预览页。
+**关键文件只有一个**: `overrides/<lib>-theme-override.css`。
+用户把这个文件 + `tokens/` 复制到自己项目,在入口导入一次,所有现有组件自动变脸。
 
-## 支持的 Agent
+## 集成示例 (Vue 3 + Element Plus)
 
-| Agent | 状态 |
-|-------|------|
-| Trae AI | ✅ |
-| Cursor | ✅ |
-| Claude Code | ✅ |
-| Codex | ✅ |
-| GitHub Copilot | ✅ |
-| Cline | ✅ |
-| Roo Code | ✅ |
+```ts
+// main.ts
+import 'element-plus/dist/index.css'
+import './ui-theme/tokens/theme.css'                  // 设计 token
+import './ui-theme/overrides/element-plus-theme-override.css'  // 覆盖
+```
 
-任何具备 **文件读取 / 写入 / 图片分析 / Figma MCP 访问** 能力的 Agent 都可使用。
+完事。代码里所有 `<el-button type="primary">` 自动变成设计稿里的主色,所有圆角、阴影、字体都跟着改。
+
+## 集成示例 (React + Ant Design)
+
+```tsx
+// main.tsx
+import 'antd/dist/reset.css'
+import './ui-theme/tokens/theme.css'
+import './ui-theme/overrides/antd-theme-override.css'
+```
+
+## 集成示例 (React + shadcn)
+
+```tsx
+// main.tsx
+import './ui-theme/tokens/theme.css'
+import './ui-theme/overrides/shadcn-theme-override.css'  // 含 tailwind.config.js 调整
+```
+
+## 支持的组件库
+
+Vue: Element Plus, Naive UI, Ant Design Vue, Vuetify
+React: Ant Design, shadcn/ui, MUI, Chakra UI
+其他: 用户可指定(只要它的 CSS 变量公开)
+
+## 支持的设计源
+
+- Figma 链接 / file key / node URL — 通过 Figma AI Bridge MCP 抓取
+- 本地 PNG / JPG / Sketch 导出 — Agent 视觉分析
+- 手写 JSON / CSS / SCSS / W3C tokens — 直接读取
+
+## 详细工作流
+
+[skills/ui-design-system-extractor/SKILL.md](skills/ui-design-system-extractor/SKILL.md)
+[references/override-patterns.md](skills/ui-design-system-extractor/references/override-patterns.md) — 各 UI 库的 CSS 变量映射表
