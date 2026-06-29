@@ -88,20 +88,22 @@ Agent 会**新增 token + 用 direct CSS selector 扩展**,而不是要求用户
 ### 一键安装(推荐)
 
 ```bash
-npx skills add mimi0132/UI-token-skill
+npx skills add mimi0132/UI-token-skill --all
 ```
 
-`skills` CLI(Vercel Labs)会自动识别你机器上装的所有 AI Agent,把 skill 装到正确位置,**不需要记路径**。
+`--all` 让 `skills` CLI(Vercel Labs)自动识别你机器上装的 AI Agent 并装好,**不会弹出选择框**。也不需要记路径,不需要选 agent。
+
+> **为什么是 `--all`**:不加这个 flag 时,CLI 会弹一个 50+ 选项的 TUI 选择器让你挑 agent。`--all` 等于告诉它"别问了,装就完了",整个过程零交互。
 
 需要换种装法:
 
 ```bash
 # 全局装 — 本机所有项目都能用
-npx skills add mimi0132/UI-token-skill -g
+npx skills add mimi0132/UI-token-skill --all -g
 
-# 装到指定的 agent
-npx skills add mimi0132/UI-token-skill --agent claude-code
-npx skills add mimi0132/UI-token-skill --agent cursor
+# 只装到指定 agent(知道自己在用什么工具时用)
+npx skills add mimi0132/UI-token-skill -a claude-code -y
+npx skills add mimi0132/UI-token-skill -a cursor -y
 
 # 先看一眼仓库里有什么 skill
 npx skills add mimi0132/UI-token-skill --list

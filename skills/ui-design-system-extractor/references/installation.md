@@ -7,30 +7,33 @@ Two paths, pick the one that fits you.
 ## Path 1: One-line install (recommended)
 
 ```bash
-npx skills add mimi0132/UI-token-skill
+npx skills add mimi0132/UI-token-skill --all
 ```
 
 The [`skills` CLI](https://github.com/vercel-labs/skills) (from Vercel Labs) auto-detects
-every AI agent on your machine and copies the skill into the correct folder. **You don't
-need to know the paths.** Works with Cursor, Claude Code, Codex, GitHub Copilot, Cline,
-Roo Code, Trae AI, Continue.dev, Aider, and 60+ other agents.
+every AI agent on your machine and installs the skill. **The `--all` flag is critical**
+— without it, the CLI pops up a 50+ option TUI picker asking you to choose an agent
+by hand. `--all` skips the picker entirely: "don't ask, just install."
+
+Works with Cursor, Claude Code, Codex, GitHub Copilot, Cline, Roo Code, Trae AI,
+Continue.dev, Aider, and 60+ other agents.
 
 ### Variations
 
 ```bash
 # Global install — all projects on this machine
-npx skills add mimi0132/UI-token-skill -g
+npx skills add mimi0132/UI-token-skill --all -g
 
-# Target a specific agent explicitly
-npx skills add mimi0132/UI-token-skill --agent claude-code
-npx skills add mimi0132/UI-token-skill --agent cursor
-npx skills add mimi0132/UI-token-skill --agent codex
+# Target a specific agent explicitly (when you know what you use)
+npx skills add mimi0132/UI-token-skill -a claude-code -y
+npx skills add mimi0132/UI-token-skill -a cursor -y
+npx skills add mimi0132/UI-token-skill -a codex -y
 
-# List what skills are in the repo first
+# List what skills are in the repo first (no install)
 npx skills add mimi0132/UI-token-skill --list
 
-# Preview what files will be installed
-npx skills add mimi0132/UI-token-skill --dry-run
+# Preview the install without writing anything
+npx skills add mimi0132/UI-token-skill --all --dry-run
 ```
 
 ### Prerequisite
@@ -117,6 +120,23 @@ gaps → override → preview → verify), the skill loaded correctly.
 ---
 
 ## Troubleshooting
+
+### A TUI picker pops up asking you to choose an agent
+
+You're running the install **without `--all`**. The default behavior is to show a 50+
+option picker. Fix: add `--all` to your command:
+
+```bash
+npx skills add mimi0132/UI-token-skill --all
+```
+
+Or pick one explicitly:
+
+```bash
+npx skills add mimi0132/UI-token-skill -a claude-code -y
+```
+
+Or skip the install entirely with the paste-and-use path (above).
 
 ### `npx skills` says "agent not detected"
 
