@@ -83,47 +83,46 @@ Agent 会**新增 token + 用 direct CSS selector 扩展**,而不是要求用户
 
 ---
 
-## 🚀 安装
+## 🚀 快速开始
 
 ### 一键安装(推荐)
 
 ```bash
-npx skills add <your-github-user>/ui-design-system-extractor --all
+npx skills add mimi0132/UI-token-skill
 ```
 
-### 自定义安装
+`skills` CLI(Vercel Labs)会自动识别你机器上装的所有 AI Agent,把 skill 装到正确位置,**不需要记路径**。
+
+需要换种装法:
 
 ```bash
-# 只装到 Claude Code 和 Cursor
-npx skills add <your-github-user>/ui-design-system-extractor -a claude-code -a cursor -y
+# 全局装 — 本机所有项目都能用
+npx skills add mimi0132/UI-token-skill -g
 
-# 全局安装
-npx skills add <your-github-user>/ui-design-system-extractor -g -y
+# 装到指定的 agent
+npx skills add mimi0132/UI-token-skill --agent claude-code
+npx skills add mimi0132/UI-token-skill --agent cursor
+
+# 先看一眼仓库里有什么 skill
+npx skills add mimi0132/UI-token-skill --list
 ```
 
-### 手动安装
+### 不安装,直接用(用完即走)
 
-把 `skills/ui-design-system-extractor/` 复制到 Agent 的 skills 目录:
-
-| Agent          | 复制到                                  |
-|----------------|-----------------------------------------|
-| Trae AI        | `.trae/skills/` 或 `~/.trae-cn/skills/` |
-| Cursor         | `.cursor/skills/` 或 `~/.cursor/skills/` |
-| Claude Code    | `.claude/skills/` 或 `~/.claude/skills/` |
-| Codex          | `.codex/skills/` 或 `~/.codex/skills/`   |
-| GitHub Copilot | `.github/skills/`                       |
-| Cline          | `.cline/skills/` 或 `~/.cline/skills/`   |
-| Roo Code       | `.roo/skills/` 或 `~/.roo/skills/`       |
-
-### 不安装直接用
-
-在任意 AI 聊天框粘贴:
+把下面这行**粘到任意 AI 聊天框**(Cursor / Claude / ChatGPT / 任何能联网的 agent):
 
 ```
-Read https://raw.githubusercontent.com/<your-github-user>/ui-design-system-extractor/main/skills/ui-design-system-extractor/SKILL.md
+Read https://github.com/mimi0132/UI-token-skill and follow its skills/ui-design-system-extractor/SKILL.md
 
-帮我把这个 Figma 设计稿 [URL] 提取出视觉 token,生成 Element Plus 的样式覆盖文件
+[把你的设计稿 URL 或图片粘在这里]
 ```
+
+Agent 会自己拉仓库、加载 SKILL.md、按指令执行。**不留任何文件,适合尝鲜。**
+
+### 前置要求
+
+- **Node.js**(用来跑 `npx`)— [下载](https://nodejs.org/)
+- 任意一个能读文件的 AI Agent(Cursor / Claude Code / Codex / Trae AI / GitHub Copilot / Cline / Roo Code / Continue.dev / Aider …)
 
 ---
 

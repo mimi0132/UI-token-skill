@@ -1,79 +1,109 @@
 # Installation Reference
 
-This file documents how to install `ui-design-system-extractor` on each supported agent.
+Two paths, pick the one that fits you.
 
 ---
 
-## Universal Install (Recommended)
+## Path 1: One-line install (recommended)
 
 ```bash
-npx skills add <github-user>/ui-design-system-extractor --all
+npx skills add mimi0132/UI-token-skill
 ```
 
-The `--all` flag is provided by the [Vercel skills CLI](https://github.com/vercel-labs/skills).
-It auto-detects installed agents and copies the skill into each one without prompts.
+The [`skills` CLI](https://github.com/vercel-labs/skills) (from Vercel Labs) auto-detects
+every AI agent on your machine and copies the skill into the correct folder. **You don't
+need to know the paths.** Works with Cursor, Claude Code, Codex, GitHub Copilot, Cline,
+Roo Code, Trae AI, Continue.dev, Aider, and 60+ other agents.
+
+### Variations
+
+```bash
+# Global install — all projects on this machine
+npx skills add mimi0132/UI-token-skill -g
+
+# Target a specific agent explicitly
+npx skills add mimi0132/UI-token-skill --agent claude-code
+npx skills add mimi0132/UI-token-skill --agent cursor
+npx skills add mimi0132/UI-token-skill --agent codex
+
+# List what skills are in the repo first
+npx skills add mimi0132/UI-token-skill --list
+
+# Preview what files will be installed
+npx skills add mimi0132/UI-token-skill --dry-run
+```
+
+### Prerequisite
+
+- **Node.js** (for the `npx` command) — [download](https://nodejs.org/)
+- That's it. The CLI handles the rest.
+
+### Uninstall
+
+```bash
+npx skills remove mimi0132/UI-token-skill --all
+```
 
 ---
 
-## Per-Agent Manual Install
+## Path 2: Paste-and-use (no install, no files)
 
-If you want full control, copy the `skills/ui-design-system-extractor/` folder into the
-agent's skills directory:
+For a one-off task — or when you don't want to install anything — paste this into **any
+AI chat box** (Cursor, Claude.ai, ChatGPT, an IDE assistant, …):
 
-| Agent                | Skills Directory (project)   | Skills Directory (global)        |
-|----------------------|------------------------------|----------------------------------|
-| Trae AI              | `.trae/skills/`              | `~/.trae-cn/skills/`             |
-| Cursor               | `.cursor/skills/`            | `~/.cursor/skills/`              |
-| Claude Code          | `.claude/skills/`            | `~/.claude/skills/`              |
-| Codex (OpenAI)       | `.codex/skills/`             | `~/.codex/skills/`               |
-| GitHub Copilot       | `.github/skills/`            | n/a                              |
-| Cline                | `.cline/skills/`             | `~/.cline/skills/`               |
-| Roo Code             | `.roo/skills/`               | `~/.roo/skills/`                 |
-| Continue.dev         | `.continue/skills/`          | `~/.continue/skills/`            |
-| Aider                | `.aider/skills/`             | `~/.aider/skills/`               |
-
-### Copy commands
-
-**Project-level** (only this project sees the skill):
-
-```bash
-# Replace <target-dir> with the agent-specific path from the table above
-cp -r skills/ui-design-system-extractor <target-dir>/
+```
+Read https://github.com/mimi0132/UI-token-skill and follow its
+skills/ui-design-system-extractor/SKILL.md to [your design task here].
 ```
 
-**Global** (all projects on this machine):
+The agent fetches the repo, loads `SKILL.md`, and applies the skill to your request.
+Nothing is installed, nothing is left on your machine.
+
+**Examples:**
+
+```
+Read https://github.com/mimi0132/UI-token-skill and follow its
+skills/ui-design-system-extractor/SKILL.md to convert this Figma design
+into a CSS theme for Element Plus: https://www.figma.com/design/xxx
+```
+
+```
+Read https://github.com/mimi0132/UI-token-skill and follow its
+skills/ui-design-system-extractor/SKILL.md to extract design tokens from
+the attached screenshot and generate a theme override for Ant Design.
+```
+
+---
+
+## Advanced: Manual install per agent
+
+If `npx skills` doesn't detect your agent, copy `skills/ui-design-system-extractor/`
+into the agent's skills folder manually:
+
+| Agent            | Project folder        | Global folder         |
+|------------------|-----------------------|-----------------------|
+| Trae AI          | `.trae/skills/`       | `~/.trae-cn/skills/`  |
+| Cursor           | `.cursor/skills/`     | `~/.cursor/skills/`   |
+| Claude Code      | `.claude/skills/`     | `~/.claude/skills/`   |
+| Codex (OpenAI)   | `.codex/skills/`      | `~/.codex/skills/`    |
+| GitHub Copilot   | `.github/skills/`     | n/a                   |
+| Cline            | `.cline/skills/`      | `~/.cline/skills/`    |
+| Roo Code         | `.roo/skills/`        | `~/.roo/skills/`      |
+| Continue.dev     | `.continue/skills/`   | `~/.continue/skills/` |
+| Aider            | `.aider/skills/`      | `~/.aider/skills/`    |
 
 ```bash
-# For Trae
-mkdir -p ~/.trae-cn/skills
-cp -r skills/ui-design-system-extractor ~/.trae-cn/skills/
+# Project-level (this project only)
+cp -r skills/ui-design-system-extractor <project-folder-from-table>/
 
-# For Claude Code
-mkdir -p ~/.claude/skills
+# Global (every project)
+mkdir -p ~/.claude/skills    # for Claude Code, for example
 cp -r skills/ui-design-system-extractor ~/.claude/skills/
-
-# For Cursor
-mkdir -p ~/.cursor/skills
-cp -r skills/ui-design-system-extractor ~/.cursor/skills/
 ```
 
 ---
 
-## No-Install: Paste-and-Use
-
-For agents without a skills directory (or when you want a one-off use), paste this into
-any chat:
-
-```
-Read https://raw.githubusercontent.com/<github-user>/ui-design-system-extractor/main/skills/ui-design-system-extractor/SKILL.md
-```
-
-Or paste the entire file content directly. The agent will load the instructions and apply
-them to the next request.
-
----
-
-## Verify Installation
+## Verify the install
 
 After installing, ask the agent:
 
@@ -81,15 +111,46 @@ After installing, ask the agent:
 列出 ui-design-system-extractor 的工作流程
 ```
 
-If the agent can list all 6 steps (clarify → tokens → components → override → preview → verify),
-the skill is loaded correctly.
+If the agent can list all the phases (clarify → discover lib → extract tokens → derive
+gaps → override → preview → verify), the skill loaded correctly.
 
 ---
 
-## Uninstall
+## Troubleshooting
+
+### `npx skills` says "agent not detected"
+
+Your agent isn't in the CLI's auto-detect list yet. Use Path 2 (paste-and-use) or the
+manual install table above.
+
+### `npx skills` reports "skill not found in repo"
+
+Make sure the skill folder is named exactly `ui-design-system-extractor` and contains
+a `SKILL.md` at its root. Run `npx skills add mimi0132/UI-token-skill --list` to see
+what the CLI sees.
+
+### The agent loads the skill but doesn't use it
+
+Some agents require explicit activation. Try:
+- **Claude Code**: type `/ui-design-system-extractor`
+- **Cursor / Codex**: mention `$ui-design-system-extractor` in chat
+- **Generic**: start your request with "Use the ui-design-system-extractor skill to..."
+
+### Permission denied on the install
+
+If `cp -r` fails on a global folder, prefix with `sudo` or use Path 1 (the `npx` CLI
+handles permissions for you).
+
+### Want to fork it?
+
+The repo is yours to clone, rename, and re-publish:
 
 ```bash
-npx skills remove ui-design-system-extractor --all
+git clone https://github.com/mimi0132/UI-token-skill.git
+# Edit SKILL.md, references/*.md, and README.md to match your team
+# Push to your own repo
+git remote set-url origin <your-repo-url>
+git push -u origin main
 ```
 
-Or manually delete the copy from each agent's skills directory.
+Then share `npx skills add <your-org>/<your-repo>` with your team.
