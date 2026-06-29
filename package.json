@@ -1,10 +1,9 @@
 {
-  "name": "ui-design-system-extractor",
+  "name": "ui-token-skill",
   "version": "1.0.0",
-  "description": "Extracts design tokens from Figma / images / hand-written tokens, generates a component library that can override Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra. Works on every major AI coding agent via npx skills install.",
+  "description": "Extracts all visual design tokens (colors, typography, font-size, font-weight, line-height, spacing, radius, shadow, border, grid, container, breakpoints, motion) from a design source (Figma / image / hand-written tokens), then generates a single CSS override file that re-skins an existing component library (Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra / Vuetify). Preserves all interaction behavior. Works on every major AI coding agent via npx skills install.",
   "type": "module",
   "files": [
-    "SKILL.md",
     "README.md",
     "skills/"
   ],
@@ -14,6 +13,7 @@
     "figma",
     "ui-components",
     "agent-skill",
+    "skills",
     "cursor",
     "claude-code",
     "trae",
@@ -26,16 +26,20 @@
     "shadcn",
     "mui",
     "chakra-ui",
-    "theme-override"
+    "vuetify",
+    "theme-override",
+    "css-variables",
+    "reskin",
+    "rebrand"
   ],
-  "author": "your-github-user",
+  "author": "mimi0132",
   "license": "MIT",
-  "homepage": "https://github.com/your-github-user/ui-design-system-extractor#readme",
+  "homepage": "https://github.com/mimi0132/UI-token-skill#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-github-user/ui-design-system-extractor.git"
+    "url": "https://github.com/mimi0132/UI-token-skill.git"
   },
   "bugs": {
-    "url": "https://github.com/your-github-user/ui-design-system-extractor/issues"
+    "url": "https://github.com/mimi0132/UI-token-skill/issues"
   }
 }

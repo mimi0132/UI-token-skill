@@ -20,14 +20,14 @@ description: "Extracts visual design tokens (colors, typography, spacing, radius
 ### 一键安装到所有 Agent (推荐)
 
 ```bash
-npx skills add YOUR_GITHUB_USER/ui-design-system-extractor --all
+npx skills add mimi0132/UI-token-skill --all
 ```
 
 ### 自定义安装
 
 ```bash
-npx skills add YOUR_GITHUB_USER/ui-design-system-extractor -a claude-code -a cursor -y
-npx skills add YOUR_GITHUB_USER/ui-design-system-extractor -g -y
+npx skills add mimi0132/UI-token-skill -a claude-code -a cursor -y
+npx skills add mimi0132/UI-token-skill -g -y
 ```
 
 ### 不安装直接用
@@ -35,7 +35,7 @@ npx skills add YOUR_GITHUB_USER/ui-design-system-extractor -g -y
 在任意 AI 聊天框粘贴:
 
 ```
-Read https://raw.githubusercontent.com/YOUR_GITHUB_USER/ui-design-system-extractor/main/skills/ui-design-system-extractor/SKILL.md
+Read https://raw.githubusercontent.com/mimi0132/UI-token-skill/main/skills/ui-design-system-extractor/SKILL.md
 ```
 
 完整安装指南见 [references/installation.md](references/installation.md)
