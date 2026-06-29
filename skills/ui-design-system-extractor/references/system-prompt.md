@@ -525,6 +525,14 @@ The preview page is the user's acceptance test. Before declaring done, verify:
 - [ ] Target component library CSS is loaded (CDN or local)
 - [ ] Override file is loaded **after** the lib's CSS
 - [ ] At least 5 common components are visible: **Button, Input, Tag, Card, Dialog/Modal**
+  - **真实标准**: 8 大类 **50+ 组件必须全覆盖**,完整清单见
+    `references/preview-comprehensive.md`。
+  - **少一个 = 不算交付**。5 个覆盖率 < 10%,组件库一般 50+ 个,preview 的核心
+    目的就是"看到全库都跟着变了",3-5 个远远不够。
+  - 每个组件至少展示 2 个状态(default + 1 其他: hover / disabled / focus /
+    active / loading)
+  - 必须用真实组件类名(`el-button el-button--primary`),**禁止**用 `.btn-primary`
+    这样的自定义类(那样无法验证 override 对真实库生效)
 - [ ] Each component shows at least: default, hover, disabled, active states
 - [ ] Color tokens are visible as swatches (with token names + HEX)
 - [ ] Typography tokens are visible as labeled samples

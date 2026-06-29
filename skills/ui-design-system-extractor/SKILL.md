@@ -271,6 +271,9 @@ Do NOT invoke when:
 **重要**:
 - 预览页就是用户验收的地方。**必须**能用浏览器打开并看到效果。
 - 至少展示: Button / Input / Tag / Card / Dialog (Modal) 5 个组件。
+  - **真实标准**: 8 大类 **50+ 组件必须全覆盖**,完整清单见
+    [references/preview-comprehensive.md](references/preview-comprehensive.md)。
+  - **少一个 = 不算交付**。组件库覆盖是 preview 的核心目的,3-5 个远远不够(组件库一般 50+ 个,5 个覆盖率 < 10%)。
 - 暗色模式预览可以放 toggle 按钮,默认 light。
 
 ### Step 4 — Document (README.md)
