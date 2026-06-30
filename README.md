@@ -48,7 +48,7 @@ Agent 会:
 |------|--------|------|
 | 1 | 提取 15 维度视觉变量 | 7 个 token 源文件 (`tokens/*.css`) |
 | 2 | 映射到目标库的 CSS 变量 | `overrides/<lib>-theme-override.css` ⭐ |
-| 3 | 生成预览页 | `preview/preview.html` |
+| 3 | 生成 1 个总览预览页 (含 Color System 6 子块 + 50+ 组件 demo) | `preview/comprehensive-preview.html` |
 | 4 | 给集成说明 | `README.md` |
 
 集成后,你项目里的 `<el-button>` `<a-button>` `<NButton>` `<Button>` 等组件代码**一行不动**,刷新就变脸。
@@ -128,6 +128,9 @@ UI-token-skill/
 
 **改一个 token 没生效?**
 检查 import 顺序 — 库 CSS → tokens/theme.css → overrides/。override 必须在最后。
+
+**预览页只有 1 个文件但我有 dashboard-xxx.html?**
+那是之前 Agent 跑流程时留下的冗余,删掉即可。`rm preview/dashboard-*.html preview/user-list-*.html preview/preview.html` 然后重新跑一次,只保留 `comprehensive-preview.html`。
 
 **暗色模式不切换?**
 检查 `[data-theme="dark"]` 选择器在你的 override 文件里有没有定义。参考 [override-patterns.md](skills/ui-design-system-extractor/references/override-patterns.md)。

@@ -1,5 +1,165 @@
 # Preview: Comprehensive Component Coverage
 
+## ⚠️ 输出文件硬约束: 只能有 1 个
+
+预览页目录**只允许**有 1 个文件:
+
+```
+preview/
+└── comprehensive-preview.html   ← 唯一文件
+```
+
+**禁止**生成以下任何文件:
+
+- ❌ `preview.html` / `index.html` / `overview.html` / `summary.html`
+- ❌ `dashboard-cluster-overview.html` / `dashboard-foo.html` / `dashboard-bar.html`...
+- ❌ `user-list-detail.html` / `order-page-demo.html` / `<任意业务页面>.html`
+- ❌ 任何 "看上去是某个具体业务页面" 的 demo
+
+**原因**: 这个 skill 的输出是"组件库主题覆盖",**不是某个具体页面**。要展示的是
+"新主题在 50+ 组件上的效果",**不是**"在某个 dashboard 页面上的效果"。如果用户要看
+业务页面,直接刷新他们自己的应用即可,不需要我们造一个 demo 业务页面。
+
+**全部组件塞进 1 个 `comprehensive-preview.html`**,滚动看完即结束。
+
+## ⚠️ 每个组件 demo 必须有中文 label
+
+光有区块标题 `<h2>` 是不够的。**区块内每一个具体 demo**(每一种状态、每一个变体)
+都必须有中文文字 label,**不允许**只放一个无标签的按钮 / 输入框。
+
+❌ 错误示范:
+```html
+<div class="demo-block__body">
+  <button class="el-button el-button--primary"></button>          <!-- 没标签 -->
+  <button class="el-button el-button--success"></button>          <!-- 没标签 -->
+  <input class="el-input" />                                       <!-- 没标签 -->
+</div>
+```
+
+✅ 正确示范 (每个 demo 外面套一个带 label 的容器):
+```html
+<div class="demo-block__body">
+  <div class="demo-item">
+    <span class="demo-item__label">主操作按钮 (primary)</span>
+    <button class="el-button el-button--primary">立即购买</button>
+  </div>
+  <div class="demo-item">
+    <span class="demo-item__label">成功状态 (success)</span>
+    <button class="el-button el-button--success">已完成</button>
+  </div>
+  <div class="demo-item">
+    <span class="demo-item__label">危险操作 (danger, 不可点击)</span>
+    <button class="el-button el-button--danger" disabled>已删除</button>
+  </div>
+  <div class="demo-item">
+    <span class="demo-item__label">文本输入框 (带 placeholder)</span>
+    <input class="el-input" placeholder="请输入用户名" />
+  </div>
+</div>
+```
+
+**label 规范**:
+- 写"是什么"(按钮/输入框/卡片/...) + "什么状态"(primary/success/disabled/hover/...)
+- 长度 ≤ 25 字
+- 用 `<span class="demo-item__label">` 包裹,放在 demo 元素**正上方**
+- label 颜色用 `var(--color-text-secondary)`,字号 `var(--font-size-sm)`
+
+## ⚠️ 排版必须清晰: 间距合理,视觉有节奏
+
+预览页不是仓库,不是堆料。**每个 demo item 之间留 24px 间距**,**每行最多 4-6 个 demo item**(多了换行),
+让用户一眼能扫到区块主题,不会被"乱糟糟"劝退。
+
+```css
+/* 写进 comprehensive-preview.html 的 <style> 块(只布局,不写组件样式) */
+:root {
+  /* 间距系统直接从 tokens/spacing.css 引,不要硬编码 */
+}
+body {
+  margin: 0;
+  font-family: var(--font-family-base);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+.demo-block {
+  padding: var(--space-6) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+.demo-block:nth-child(even) {
+  background: var(--color-bg-secondary);
+  margin: 0 calc(-1 * var(--space-6));
+  padding: var(--space-6);
+}
+.demo-block__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-2) 0;
+}
+.demo-block__index {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-elevated);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+.demo-block__tag {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-elevated);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: auto;
+}
+.demo-block__desc {
+  margin: 0 0 var(--space-4) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+.demo-block__divider {
+  border: 0;
+  border-top: 1px solid var(--color-border-default);
+  margin: var(--space-4) 0;
+}
+.demo-block__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6);
+}
+.demo-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.demo-item__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+.toc { /* 顶部 / 左侧导航 */
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-elevated);
+  padding: var(--space-3) var(--space-6);
+  border-bottom: 1px solid var(--color-border-default);
+  z-index: 100;
+}
+```
+
+**布局原则**:
+- demo item 之间留 24-32px 间距 (用 `var(--space-6)`)
+- 每行 4-6 个 demo item 之后换行 (用 CSS grid `auto-fit, minmax(280px, 1fr)`)
+- 奇偶区块背景交替,视觉有节奏
+- 区块之间用 1px 边框分割,不要用大色块硬切
+- 单区块 demo 总高度不超过 1 屏(800px),多了就分多个子区块
+- demo item 内部 demo 元素和 label 之间留 8px 间距
+
+---
+
 ## Page Structure & Visual Hierarchy
 
 预览页必须**结构清晰、命名明确**。如果一坨组件堆在一起没有边界、没有标题、没有状态说明,用户无法判断某个 demo 到底在展示什么 → 也就无法验证 token 替换效果。
@@ -25,12 +185,20 @@
   <!-- 分割线 -->
   <hr class="demo-block__divider" />
 
-  <!-- demo 内容(只用真实库类名) -->
+  <!-- demo 内容: 1 个 demo item = 1 个中文 label + 1 个真实组件 -->
   <div class="demo-block__body">
-    <button class="el-button el-button--primary">Primary</button>
-    <button class="el-button el-button--success">Success</button>
-    <button class="el-button" disabled>Disabled</button>
-    <!-- ... -->
+    <div class="demo-item">
+      <span class="demo-item__label">主操作按钮 (primary)</span>
+      <button class="el-button el-button--primary">立即购买</button>
+    </div>
+    <div class="demo-item">
+      <span class="demo-item__label">成功状态 (success)</span>
+      <button class="el-button el-button--success">已完成</button>
+    </div>
+    <div class="demo-item">
+      <span class="demo-item__label">禁用态 (disabled)</span>
+      <button class="el-button" disabled>不可点击</button>
+    </div>
   </div>
 </section>
 ```
@@ -39,22 +207,28 @@
 
 | 规则 | 要求 |
 |------|------|
+| 输出文件 | `preview/comprehensive-preview.html` 唯一 1 个,**禁止**多文件 |
 | 区块标题 | `<h2>`,左侧带 2 位数字编号 (`01` / `02` / ...) + 名称 + 标签徽章 |
 | 区块说明 | 标题下 1 句中文,说明这个区块要验证什么视觉变量 |
 | 区块分割 | 每个区块之间用 `<hr>` 分割线,视觉上彼此独立 |
 | demo 数量 | 1-3 行 HTML,不超过 1 屏高度,50+ 组件合在一起 1 整页可滚动完 |
 | 真实类名 | 全部使用目标库的真实类名(`el-button--primary`),不写自定义 `.btn-primary` |
 | 状态数 | 每个组件 demo 至少 2 个状态(默认 + 1 个其他) |
+| **中文 label** | **区块内每个 demo item 都必须有中文 label**,写"是什么 + 什么状态",≤25 字 |
+| **排版** | **demo item 之间 24-32px 间距,每行 4-6 个换行,奇偶区块背景交替** |
 | 颜色 / 文字 / 背景 | demo 区域必须有可读的对比度,不能放白底白字或暗色背景被压黑 |
 | 侧边导航 | 顶部或左侧加 `<nav class="toc">` 锚点跳转,让用户能秒跳到任意区块 |
 | 区块背景 | 奇偶区块交替 `var(--color-bg-primary)` / `var(--color-bg-secondary)`,视觉有节奏 |
 
 **禁止**:
 
+- ❌ 生成多个预览文件 (`dashboard-*.html` / `user-list-*.html` / `preview.html` 等)
 - ❌ 把所有组件一坨平铺,没有 `<section>` / 标题 / 说明
-- ❌ demo 区无任何说明文字,只有 1 个无标签的按钮
+- ❌ demo item 没有中文 label,只有无标签的按钮 / 输入框
+- ❌ demo item 之间 0 间距或 4px 间距,挤成一坨
 - ❌ 自定义类名验证库覆盖(`.btn` / `.button` / `.my-btn`)
 - ❌ 内联 `<style>` 修组件样式(必须由 override 文件驱动)
+- ❌ 在 preview 里"模拟"业务页面(dashboard / 用户列表 / 订单页等)
 
 ---
 

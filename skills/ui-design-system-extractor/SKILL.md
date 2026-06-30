@@ -106,8 +106,8 @@ Do NOT invoke when:
    其他文件都是辅助,**生成这 1 个文件就完成了 80% 的价值**。
 2. **Override 文件必须 `@import` 7 个 token 文件**(theme/colors/typography/spacing/radius/border/motion),不能有 raw color / raw px。
 3. **必须映射目标库 ALL relevant CSS variables**。只映射 `--el-color-primary` 但不映射 `--el-color-primary-light-3` 会导致 hover/active 状态颜色不一致 —— 这是最常见的失败模式。
-4. **必须生成预览页** (`preview.html`),用 iframe 或 inline HTML 展示现有组件套上
-   override 后的样子。用户必须能先看效果再决定要不要集成。
+4. **必须生成预览页** (`preview/comprehensive-preview.html` 唯一 1 个),用 iframe 或 inline HTML 展示现有组件套上
+   override 后的样子。用户必须能先看效果再决定要不要集成。**禁止**生成 dashboard / user-list / preview 等其他文件。
 5. **集成说明必须是一行 import**,不能多于 3 步。
 6. **暗色模式必须支持**: 输出 `[data-theme="dark"]` 变体,且告诉用户怎么切换。
 7. **不能生成任何新组件文件** (Button.vue / Button.tsx / 等等) —— 永远不写。
@@ -228,8 +228,11 @@ Do NOT invoke when:
 
 ### Step 3 — Generate Preview Page
 
-输出 `preview/preview.html`,**用 CDN 引入目标组件库**,然后加载 override 文件,
-展示所有常见组件在新主题下的样子:
+输出 **`preview/comprehensive-preview.html`(只此一个文件)**,**用 CDN 引入目标组件库**,
+然后加载 override 文件,展示所有常见组件在新主题下的样子。
+
+**严禁生成多个预览页**(不要 `dashboard-xxx.html` / `user-list-xxx.html` / `preview.html` /
+`overview.html` 等)。一个项目只需要 1 个总览页,其他都是噪音。
 
 ```html
 <!DOCTYPE html>
@@ -312,10 +315,14 @@ grep -q "@import" overrides/<lib>-theme-override.css
 ! grep -E "[0-9]+px" overrides/<lib>-theme-override.css | grep -vE "(control-height|breakpoint|container-max-width|icon-size|focus-ring-width)" || true
 
 # 5. 预览页存在
-test -f preview/preview.html
+test -f preview/comprehensive-preview.html
 
 # 6. README 含集成 snippet
 grep -q "import" README.md
+
+# 7. 预览目录严格只有 1 个文件
+PREVIEW_COUNT=$(ls preview/*.html 2>/dev/null | wc -l | tr -d ' ')
+[ "$PREVIEW_COUNT" = "1" ] || { echo "preview/ 应只有 1 个文件,实际有 $PREVIEW_COUNT 个"; ls preview/; exit 1; }
 ```
 
 ---
@@ -335,13 +342,13 @@ grep -q "import" README.md
 ├── overrides/
 │   └── <lib>-theme-override.css        # ⭐ 唯一关键文件 (含 grid/breakpoint/container/icon-size/focus-ring 库内映射)
 ├── preview/
-│   └── preview.html                    # 验收用
+│   └── comprehensive-preview.html       # 验收用 (唯一 1 个预览文件)
 └── README.md                           # 集成说明
 ```
 
 **8 个文件。完事。**
 
-不生成组件源码、不生成 `index.ts`、不生成 `package.json`、不生成 `dist/`。
+不生成组件源码、不生成 `index.ts`、不生成 `package.json`、不生成 `dist/`、**不生成多个预览页**(只 1 个 comprehensive-preview.html)。
 
 ---
 
@@ -355,7 +362,7 @@ Action:
 1. **Clarify**: 库 = Element Plus, 源 = Figma, 范围 = 完整换肤
 2. **Extract**: `mcp_Figma_AI_Bridge.get_figma_data` → 7 个 token 文件
 3. **Override**: 读 [references/override-patterns.md#element-plus](references/override-patterns.md#element-plus) → 生成 `element-plus-theme-override.css`,**完整映射所有 `--el-color-*` / `--el-border-*` / `--el-text-*`**
-4. **Preview**: `preview.html` 用 CDN 引 `element-plus`,展示 Button/Input/Tag/Card/Dialog
+4. **Preview**: `preview/comprehensive-preview.html` 用 CDN 引 `element-plus`,展示 Category 0 色系 6 子块 + 50+ 组件
 5. **Document**: README 给 3 行 import
 
 ### Example 2 — shadcn/ui 换肤
@@ -367,7 +374,7 @@ Action:
 2. **Extract**: 视觉分析 → 7 个 token
 3. **Override**: shadcn 用 CSS 变量 (`--background` / `--foreground` / `--primary` 等),生成
    `shadcn-theme-override.css` + `tailwind.config.js` 调整片段
-4. **Preview**: shadcn 没有 CDN,但可以展示基础 HTML 元素 (button/input/card) 套上 shadcn tokens 的样子
+4. **Preview**: `preview/comprehensive-preview.html` 展示基础 HTML 元素 (button/input/card) 套上 shadcn tokens 的样子
 5. **Document**: README 解释 shadcn 的 `tailwind.config.js` 集成方式
 
 ### Example 3 — 只换颜色
