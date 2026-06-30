@@ -1,14 +1,156 @@
 # Preview: Comprehensive Component Coverage
 
-## Standard: 8 categories, 50+ components, all required
+## Page Structure & Visual Hierarchy
+
+预览页必须**结构清晰、命名明确**。如果一坨组件堆在一起没有边界、没有标题、没有状态说明,用户无法判断某个 demo 到底在展示什么 → 也就无法验证 token 替换效果。
+
+**每个组件 / 区块必须遵循这个 HTML 结构**:
+
+```html
+<!-- 区块外层 -->
+<section class="demo-block" id="cat-buttons">
+  <!-- 标题 + 简短说明 -->
+  <header class="demo-block__header">
+    <h2 class="demo-block__title">
+      <span class="demo-block__index">01</span>
+      Buttons
+      <span class="demo-block__tag">8 variants</span>
+    </h2>
+    <p class="demo-block__desc">
+      验证 primary / default / success / warning / danger / info / text / link
+      共 8 种语义按钮的颜色、字号、圆角、阴影、hover 状态。
+    </p>
+  </header>
+
+  <!-- 分割线 -->
+  <hr class="demo-block__divider" />
+
+  <!-- demo 内容(只用真实库类名) -->
+  <div class="demo-block__body">
+    <button class="el-button el-button--primary">Primary</button>
+    <button class="el-button el-button--success">Success</button>
+    <button class="el-button" disabled>Disabled</button>
+    <!-- ... -->
+  </div>
+</section>
+```
+
+**全局规范**:
+
+| 规则 | 要求 |
+|------|------|
+| 区块标题 | `<h2>`,左侧带 2 位数字编号 (`01` / `02` / ...) + 名称 + 标签徽章 |
+| 区块说明 | 标题下 1 句中文,说明这个区块要验证什么视觉变量 |
+| 区块分割 | 每个区块之间用 `<hr>` 分割线,视觉上彼此独立 |
+| demo 数量 | 1-3 行 HTML,不超过 1 屏高度,50+ 组件合在一起 1 整页可滚动完 |
+| 真实类名 | 全部使用目标库的真实类名(`el-button--primary`),不写自定义 `.btn-primary` |
+| 状态数 | 每个组件 demo 至少 2 个状态(默认 + 1 个其他) |
+| 颜色 / 文字 / 背景 | demo 区域必须有可读的对比度,不能放白底白字或暗色背景被压黑 |
+| 侧边导航 | 顶部或左侧加 `<nav class="toc">` 锚点跳转,让用户能秒跳到任意区块 |
+| 区块背景 | 奇偶区块交替 `var(--color-bg-primary)` / `var(--color-bg-secondary)`,视觉有节奏 |
+
+**禁止**:
+
+- ❌ 把所有组件一坨平铺,没有 `<section>` / 标题 / 说明
+- ❌ demo 区无任何说明文字,只有 1 个无标签的按钮
+- ❌ 自定义类名验证库覆盖(`.btn` / `.button` / `.my-btn`)
+- ❌ 内联 `<style>` 修组件样式(必须由 override 文件驱动)
+
+---
+
+## Coverage Standard: 8 categories, 50+ components, all required
 
 A preview that only demos 3 components (Button / Tag / Input) is **incomplete by
 definition**. The override file is supposed to change the look of the *entire* library,
 and the preview is the visual proof. If 47 components aren't demoed, the user has to
 take it on faith that the override works — which is exactly what we're trying to avoid.
 
-**Rule**: every preview must cover all 8 categories below. Missing a category means
-the deliverable is incomplete; do not declare done until coverage is full.
+**Rule**: every preview must cover all categories below (Category 0 Color System +
+Categories 1-8 Components). Missing a category means the deliverable is incomplete;
+do not declare done until coverage is full.
+
+---
+
+## Category 0: Color System (必须最先展示)
+
+颜色体系是设计稿的根。预览页必须**先**展示完整的颜色 swatch,让用户在浏览组件 demo 前,
+就能一眼验证色阶 / 文字色 / 背景色 / 边框色是否对。**主色不能孤立**,neutral / 4 类语义色 /
+文字色 / 背景色 / 边框色都要有独立的 swatch 区块,每个区块都有标题 + 简短说明。
+
+**至少 5 个 sub-block**(每个独立 `<section>`,独立标题编号 `00.1` / `00.2` / ...):
+
+### 00.1 Primary Scale — 10 档色阶
+
+展示 `--color-primary-50` 到 `--color-primary-900` 共 10 档,每档一个 swatch 块,块上写色名 + 16 进制色值 + var 变量名。
+
+```html
+<section class="demo-block" id="cat-color-primary">
+  <header class="demo-block__header">
+    <h2 class="demo-block__title">
+      <span class="demo-block__index">00.1</span>
+      Primary Scale
+      <span class="demo-block__tag">10 stops</span>
+    </h2>
+    <p class="demo-block__desc">主色 10 档色阶 (50-900),改 `--color-primary-500` 一处,9 档全部自动重新推导。</p>
+  </header>
+  <hr class="demo-block__divider" />
+  <div class="demo-block__body swatch-grid">
+    <div class="swatch" style="background: var(--color-primary-50)">
+      <span class="swatch__name">primary-50</span>
+      <span class="swatch__var">--color-primary-50</span>
+    </div>
+    <div class="swatch" style="background: var(--color-primary-100)">
+      <span class="swatch__name">primary-100</span>
+      <span class="swatch__var">--color-primary-100</span>
+    </div>
+    <!-- ... 100/200/300/400/500/600/700/800/900 ... -->
+  </div>
+</section>
+```
+
+### 00.2 Neutral Scale — 10 档中性色
+
+展示 `--color-neutral-50` 到 `--color-neutral-900`,用于文字、边框、背景次级表面。
+
+### 00.3 Semantic Scales — 4 类语义色,每类 10 档
+
+`--color-success-*` / `--color-warning-*` / `--color-danger-*` / `--color-info-*`,
+每类展示 10 档 swatch。可以用 4 个 sub-section 分开展示,也可以用 4 行横向铺开。
+
+### 00.4 Text Colors — 5 档文字色
+
+| 名称 | 变量 | 用途 |
+|------|------|------|
+| Primary | `--color-text-primary` | 标题、正文主文 |
+| Regular | `--color-text-regular` | 常规正文 |
+| Secondary | `--color-text-secondary` | 辅助文字 |
+| Placeholder | `--color-text-placeholder` | 输入框 placeholder |
+| Disabled | `--color-text-disabled` | 禁用状态文字 |
+
+展示方式:每行用该文字色写一段"这是一段示例文字 The quick brown fox jumps over the lazy dog 0123456789",
+让用户能直接对比 5 档色阶的层次感。
+
+### 00.5 Background Colors — 4 档背景色
+
+| 名称 | 变量 | 用途 |
+|------|------|------|
+| Page | `--color-bg-primary` | 页面主背景 |
+| Surface | `--color-bg-secondary` | 卡片 / 区块次级背景 |
+| Elevated | `--color-bg-elevated` | 弹窗 / 下拉悬浮层 |
+| Hover | `--color-bg-hover` | hover 态背景 |
+
+### 00.6 Border Colors — 3 档边框色
+
+| 名称 | 变量 | 用途 |
+|------|------|------|
+| Default | `--color-border-default` | 常规边框 |
+| Strong | `--color-border-strong` | 强调边框 |
+| Focus | `--color-border-focus` | 焦点环(配合 `box-shadow: 0 0 0 3px var(--color-border-focus-soft)`) |
+
+展示方式:每个色值画一个 1px / 2px 边框的方块,块内标注变量名。
+
+**Color System 是预览页的"地基",后续 Category 1-8 全部组件的颜色都依赖这里的 6 个 sub-block**。
+如果只展示主色,后续组件 demo 的 hover / disabled / placeholder 状态颜色无法被验证。
 
 ---
 
@@ -195,18 +337,38 @@ console.log('body bg:', body.backgroundColor)
 // 7. Verify card / table / dialog corners are your radius
 const card = document.querySelector('.el-card')
 console.log('card border-radius:', card ? getComputedStyle(card).borderRadius : 'N/A')
+
+// 8. Verify Color System is fully demoed (Category 0)
+//    — at least 6 sub-blocks: primary / neutral / semantic / text / bg / border
+const colorSections = ['cat-color-primary', 'cat-color-neutral', 'cat-color-semantic',
+                       'cat-color-text', 'cat-color-bg', 'cat-color-border']
+  .filter(id => document.getElementById(id))
+console.log('color system coverage:', colorSections.length, '/ 6 — must be 6')
+if (colorSections.length < 6) console.warn('missing color sub-blocks:',
+  ['cat-color-primary','cat-color-neutral','cat-color-semantic',
+   'cat-color-text','cat-color-bg','cat-color-border']
+   .filter(id => !document.getElementById(id)))
+
+// 9. Verify text colors actually changed
+const textPrimary = getComputedStyle(document.documentElement)
+  .getPropertyValue('--color-text-primary').trim()
+console.log('--color-text-primary:', textPrimary, '— should NOT be #303133 (EP default)')
 ```
 
 **Pass criteria**:
 - `component coverage` ≥ 50
+- `color system coverage` = 6/6 (primary + neutral + semantic + text + bg + border)
 - `primary button bg` is NOT `#409EFF` (Element Plus default blue)
+- `--color-text-primary` is NOT `#303133` (Element Plus default)
 - `body font-family` is the user's design font
 - `card border-radius` is the user's design radius
 
 **Fail → fix**:
 - Coverage < 50 → re-generate the preview; you missed categories
+- Color system coverage < 6 → you forgot to demo text / bg / border / neutral / semantic; re-generate
 - Primary bg still `#409EFF` → cascade order wrong; check `theme.css` is loaded after
   the library CSS
+- Text primary still `#303133` → override file didn't load `--color-text-primary`
 - Font / radius still default → the override file didn't load, or used wrong variable
   names
 

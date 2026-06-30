@@ -274,10 +274,12 @@ Do NOT invoke when:
 
 **重要**:
 - 预览页就是用户验收的地方。**必须**能用浏览器打开并看到效果。
-- 至少展示: Button / Input / Tag / Card / Dialog (Modal) 5 个组件。
-  - **真实标准**: 8 大类 **50+ 组件必须全覆盖**,完整清单见
-    [references/preview-comprehensive.md](references/preview-comprehensive.md)。
-  - **少一个 = 不算交付**。组件库覆盖是 preview 的核心目的,3-5 个远远不够(组件库一般 50+ 个,5 个覆盖率 < 10%)。
+- 结构必须清晰: 每个区块独立 `<section class="demo-block">`,带 2 位编号 + 标题 + 1 句说明 + 分割线,1 整页可滚动完。
+- **真实标准**:
+  - **Category 0** Color System **6 个 sub-block 必全覆盖**: Primary 10 档 + Neutral 10 档 + Semantic 4 类 10 档 + Text 5 档 + Background 4 档 + Border 3 档
+  - **Categories 1-8** **50+ 组件必全覆盖**,完整清单见
+    [references/preview-comprehensive.md](references/preview-comprehensive.md)
+- **少一个 = 不算交付**。组件库覆盖是 preview 的核心目的,3-5 个远远不够(组件库一般 50+ 个,5 个覆盖率 < 10%)。
 - 暗色模式预览可以放 toggle 按钮,默认 light。
 
 ### Step 4 — Document (README.md)

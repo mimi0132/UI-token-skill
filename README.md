@@ -16,7 +16,7 @@
 - 🌓 **暗色模式** — 一行 `data-theme` 切换,色阶自动反转
 - 🎯 **交互零侵入** — 组件库原有的点击 / 键盘 / 焦点 / 表单 / 弹窗 / 滚动 / a11y / API / 受控逻辑 一行代码不动
 - 📦 **零依赖** — 不需要 Tailwind / 预处理器 / 构建工具
-- 🖼 **预览页 50+ 组件全覆盖** — 8 大类(Buttons / Form / Data Display / Navigation / Feedback / Layout / Advanced / Misc)全验证,改一个 token 立即看到所有组件变化
+- 🖼 **预览页 50+ 组件全覆盖** — Color System 6 子块 (Primary 10 档 / Neutral 10 档 / Semantic 4 类 / Text 5 档 / Bg 4 档 / Border 3 档) + 8 大类组件 (Buttons / Form / Data Display / Navigation / Feedback / Layout / Advanced / Misc) 全验证,改一个 token 立即看到所有组件变化
 
 ---
 
@@ -148,7 +148,7 @@ UI-token-skill/
 - [references/installation.md](skills/ui-design-system-extractor/references/installation.md) — 按 Agent 分别安装
 - [references/token-spec.md](skills/ui-design-system-extractor/references/token-spec.md) — 7 个 token 文件的规范与推导算法
 - [references/override-patterns.md](skills/ui-design-system-extractor/references/override-patterns.md) — 各组件库的 CSS 变量映射表
-- [references/preview-comprehensive.md](skills/ui-design-system-extractor/references/preview-comprehensive.md) — 预览页 8 大类 50+ 组件清单
+- [references/preview-comprehensive.md](skills/ui-design-system-extractor/references/preview-comprehensive.md) — 预览页结构规范 + Color System 6 子块 + 8 大类 50+ 组件清单
 
 ---
 
