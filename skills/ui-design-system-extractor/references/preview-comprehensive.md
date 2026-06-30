@@ -225,7 +225,10 @@ console.log('card border-radius:', card ? getComputedStyle(card).borderRadius : 
      <link rel="stylesheet" href="../tokens/theme.css" />
      <link rel="stylesheet" href="../tokens/colors.css" />
      <link rel="stylesheet" href="../tokens/typography.css" />
-     <!-- ... other token files ... -->
+     <link rel="stylesheet" href="../tokens/spacing.css" />
+     <link rel="stylesheet" href="../tokens/radius.css" />
+     <link rel="stylesheet" href="../tokens/border.css" />
+     <link rel="stylesheet" href="../tokens/motion.css" />
 
      <!-- 3. User's override (highest priority for variable cascade) -->
      <link rel="stylesheet" href="../overrides/el-theme-override.css" />

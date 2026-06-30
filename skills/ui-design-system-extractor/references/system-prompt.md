@@ -482,11 +482,11 @@ if the original lib uses 12 columns. We override the relevant lib variables
 
 | What to look for  | Where to find it    | Variable            |
 |-------------------|---------------------|---------------------|
-| Easing            | All transitions     | `--ease-default` (cubic-bezier(0.4, 0, 0.2, 1)) |
-| Easing emphasized | Hover, focus        | `--ease-emphasized` (cubic-bezier(0.2, 0, 0, 1)) |
-| Duration fast     | Micro-interactions  | `--duration-fast` (150ms) |
-| Duration base     | Default transitions | `--duration-base` (250ms) |
-| Duration slow     | Page-level          | `--duration-slow` (400ms) |
+| Easing standard   | All transitions     | `--motion-easing-standard` (cubic-bezier(0.4, 0, 0.2, 1)) |
+| Easing emphasis   | Hover, focus        | `--motion-easing-emphasis` (cubic-bezier(0.2, 0, 0, 1)) |
+| Duration fast     | Micro-interactions  | `--motion-duration-fast` (150ms) |
+| Duration base     | Default transitions | `--motion-duration-base` (200ms) |
+| Duration slow     | Page-level          | `--motion-duration-slow` (300ms) |
 
 **Note**: Some libs (Element Plus, Ant Design) hardcode durations. We can override
 specific selector animations but not all motion. Be explicit in the README about
@@ -655,12 +655,14 @@ The README must answer, in this order:
 ## Quality Gate (Run Before Declaring Done)
 
 ```bash
-# 1. Five token files exist
+# 1. Seven token files exist
 test -f tokens/theme.css && \
 test -f tokens/colors.css && \
 test -f tokens/typography.css && \
 test -f tokens/spacing.css && \
-test -f tokens/radius.css
+test -f tokens/radius.css && \
+test -f tokens/border.css && \
+test -f tokens/motion.css
 
 # 2. Override file exists and imports tokens
 test -f overrides/<lib>-theme-override.css && \
@@ -670,7 +672,10 @@ grep -q "@import" overrides/<lib>-theme-override.css
 ! grep -E "#[0-9a-fA-F]{3,8}" overrides/<lib>-theme-override.css
 
 # 4. No raw px in override
-! grep -E "[0-9]+px" overrides/<lib>-theme-override.css
+#    Allow-list: control-height / breakpoint / container-max-width / icon-size / focus-ring-width
+#    These are static structural values required by lib APIs and cannot use var() derivation.
+RAW_PX=$(grep -E "[0-9]+px" overrides/<lib>-theme-override.css | grep -vE "(control-height|breakpoint|container-max-width|icon-size|focus-ring-width)" || true)
+[ -z "$RAW_PX" ] || { echo "raw px found in override:"; echo "$RAW_PX"; exit 1; }
 
 # 5. No raw hex in tokens EXCEPT for the 50-900 color scales (where
 #    the base 500+ is defined explicitly; lighter/darker shades must

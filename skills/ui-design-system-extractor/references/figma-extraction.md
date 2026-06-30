@@ -125,13 +125,13 @@ If Figma only gives you the 500/600 stops, derive the rest of the scale using
   --color-primary-500: #6366F1;
   --color-primary-50:  color-mix(in srgb, var(--color-primary-500) 8%,  white);
   --color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
-  --color-primary-200: color-mix(in srgb, var(--color-primary-500) 30%, white);
-  --color-primary-300: color-mix(in srgb, var(--color-primary-500) 50%, white);
-  --color-primary-400: color-mix(in srgb, var(--color-primary-500) 75%, white);
-  --color-primary-600: color-mix(in srgb, var(--color-primary-500) 87%, black);
-  --color-primary-700: color-mix(in srgb, var(--color-primary-500) 75%, black);
+  --color-primary-200: color-mix(in srgb, var(--color-primary-500) 28%, white);
+  --color-primary-300: color-mix(in srgb, var(--color-primary-500) 44%, white);
+  --color-primary-400: color-mix(in srgb, var(--color-primary-500) 68%, white);
+  --color-primary-600: color-mix(in srgb, var(--color-primary-500) 88%, black);
+  --color-primary-700: color-mix(in srgb, var(--color-primary-500) 76%, black);
   --color-primary-800: color-mix(in srgb, var(--color-primary-500) 60%, black);
-  --color-primary-900: color-mix(in srgb, var(--color-primary-500) 45%, black);
+  --color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
 }
 ```
 
@@ -168,7 +168,7 @@ Use the downloaded image as visual reference in the agent's image analysis.
    `color.a * node.opacity` to get the effective alpha.
 
 4. **Gradient fills need a separate token** — convert to a `linear-gradient` string and
-   store in a `gradient.css` file (add to the 5 token files as a 6th file if needed).
+   store in a `gradient.css` file (add to the 7 token files as an 8th file if needed).
 
 5. **Variables / styles in Figma are referenced, not inlined** — the response may
    contain `boundVariables` with style IDs. Resolve these via the variables API before
