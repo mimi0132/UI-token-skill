@@ -70,7 +70,9 @@ import './overrides/element-plus-theme-override.css'  // ⭐ 主题覆盖
 // main.js (Vue 3 + 中创组件库)
 import 'element-plus/dist/index.css'                     // 1. 库 CSS
 import './overrides/zhongchuang-theme-override.css'      // 2. ⭐ override
-import 'zhongchuang/dist/index.scss'                     // 3. 中创 scss 补丁
+import '@/styles/zhongchuang/_element.scss'              // 3. 中创 scss 补丁
+                                                       //    (从 skill 的 resources/zhongchuang/
+                                                       //     复制 5 个 scss 文件到项目后导入)
 ```
 
 ### 2. 切暗色模式
@@ -98,13 +100,21 @@ UI-token-skill/
 ├── skills/
 │   └── ui-design-system-extractor/
 │       ├── SKILL.md                       # Agent 加载的入口
-│       └── references/                    # 按需加载的细节
-│           ├── installation.md            # 各 Agent 安装路径
-│           ├── token-spec.md              # 7 个 token 文件规范 + 推导算法
-│           ├── override-patterns.md       # 各组件库 CSS 变量映射
-│           ├── preview-comprehensive.md   # 预览页 8 大类 50+ 组件清单
-│           ├── system-prompt.md           # 提取 checklist + 质量门
-│           └── figma-extraction.md        # Figma MCP 用法
+│       ├── references/                    # 按需加载的细节
+│       │   ├── installation.md            # 各 Agent 安装路径
+│       │   ├── token-spec.md              # 7 个 token 文件规范 + 推导算法
+│       │   ├── override-patterns.md       # 各组件库 CSS 变量映射
+│       │   ├── preview-comprehensive.md   # 预览页 8 大类 50+ 组件清单
+│       │   ├── system-prompt.md           # 提取 checklist + 质量门
+│       │   └── figma-extraction.md        # Figma MCP 用法
+│       └── resources/                     # 第三方组件库资源
+│           └── zhongchuang/               # 中创组件库补丁 (随 skill 分发)
+│               ├── README.md              # 中创集成说明
+│               ├── _element.scss          # 入口
+│               ├── _avatar.scss
+│               ├── _message.scss
+│               ├── _popconfirm.scss
+│               └── _tooltip.scss
 ├── README.md                              # 本文件
 ├── package.json
 └── LICENSE
@@ -158,7 +168,9 @@ UI-token-skill/
 直接告诉 Agent "组件库是中创" 即可,会用 `overrides/zhongchuang-theme-override.css` 模板:
 - `--el-*` 全套(中创沿用 EP 前缀)
 - `--cv-message-success/warning/error/info-border-color` 等中创扩展
-- 中创自家的 `_element.scss` 布局补丁在 override 之后 import,两者互补
+- 中创自家的 `_element.scss` 布局补丁**已随 skill 分发**在 `resources/zhongchuang/`,
+  集成时复制到项目 `src/styles/` 即可,**不依赖本地 Downloads**
+- 详见 [`resources/zhongchuang/README.md`](skills/ui-design-system-extractor/resources/zhongchuang/README.md)
 
 **我用的是其他公司 fork 库 (前缀 `--my-` / `--ant-xxx-`)?**
 见 [override-patterns.md#working-with-forked](skills/ui-design-system-extractor/references/override-patterns.md#working-with-forked--internal-component-libraries),

@@ -1,0 +1,418 @@
+@use "./tooltip";
+@use "./popconfirm";
+@use "./message";
+@use "./avatar";
+
+/* el-alert */
+.el-alert {
+  border: 1px solid;
+}
+
+/* el-table 组件大小 */
+.el-table--small {
+  .el-table__header th {
+    height: 40px !important;
+    font-size: 14px !important;
+  }
+  .el-table__row {
+    height: 40px !important;
+    font-size: 13px !important;
+  }
+}
+.el-table--large {
+  .el-table__header th {
+    height: 50px !important;
+    font-size: 16px !important;
+  }
+  .el-table__row {
+    height: 50px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* el-drawer */
+.el-drawer {
+  .el-drawer__header {
+    padding: 1.5rem 1.6rem 1.7rem 1.4rem;
+    margin-bottom: 0;
+    font-size: 1.8rem;
+    line-height: 2.5rem;
+    color: var(--el-text-color-primary) !important;
+    letter-spacing: 0rem;
+    font-weight: bold;
+    .el-drawer__title {
+      font-size: 1.8rem;
+      line-height: 2.5rem;
+      color: var(--el-text-color-primary) !important;
+      letter-spacing: 0rem;
+      font-weight: bold;
+    }
+  }
+  .el-drawer__body {
+    padding: 0 1.5rem 0 1.3rem;
+  }
+  .el-drawer__footer {
+    border-top: 1px solid var(--el-border-color-lighter);
+    padding: 2rem 1.5rem 1.6rem 1.3rem;
+  }
+
+  // select 样式
+  .el-select {
+    width: 100%;
+  }
+}
+
+.el-overlay {
+  background-color: rgba(0,0,0,0.8) !important;
+}
+/* el-dialog */
+.el-dialog {
+  .el-dialog__header {
+    padding: 15px 20px;
+    margin: 0;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+    .el-dialog__title {
+      font-size: 17px;
+    }
+  }
+  .el-dialog__body,
+  .el-dialog__footer {
+    padding: 15px 20px;
+  }
+}
+
+//el-input样式
+.el-input {
+  --el-input-placeholder-color: var(--el-text-color-secondary) !important;
+
+  .el-input__inner {
+    color: var(--el-text-color-primary);
+  }
+}
+
+.el-input.is-disabled {
+  --el-input-placeholder-color: var(--el-text-color-disabled) !important;
+
+  .el-input__wrapper {
+    background-color: var(--el-fill-color-lighter)
+  }
+
+  .el-input__inner {
+    color: var(--el-text-color-disabled);
+  }
+}
+
+//el-select样式
+.el-select__placeholder.is-transparent{
+  color: var(--el-text-color-secondary) !important;
+}
+
+.el-input__prefix{
+   color: var(--el-text-color-secondary) !important;
+}
+
+//el-textarea文本框
+.el-textarea{
+ --el-input-placeholder-color: var(--el-text-color-secondary) !important;
+}
+
+//el-input-number样式
+.el-input-number__decrease,
+.el-input-number__increase {
+  background-color: var(--el-fill-color-lighter)
+}
+
+//el-pagination样式
+.el-pagination {
+  .el-pager li {
+    color: var(--el-text-color-regular);
+  }
+
+  .el-pager li.is-active,
+  .el-pager li:hover {
+    color: var(--el-pagination-hover-color);
+  }
+
+  .el-pagination button.is-disabled,
+  .el-pagination button:disabled {
+    color: var(--el-text-color-disabled);
+  }
+
+  .el-pager li.is-disabled,
+  .el-pager li:disabled {
+    color: var(--el-text-color-disabled);
+  }
+
+  .el-input .el-input__inner {
+    color: var(--el-text-color-regular);
+  }
+
+  button.btn-next,
+  button.btn-prev {
+    color: var(--el-text-color-regular);
+  }
+
+  button.btn-next.is-disabled,
+  button.btn-next:disabled,
+  button.btn-prev.is-disabled,
+  button.btn-prev:disabled {
+    color: var(--el-text-color-disabled);
+  }
+
+  .el-pagination__total[disabled=true] {
+    color: var(--el-text-color-disabled);
+  }
+
+  .el-select__wrapper.is-disabled .el-select__selected-item {
+    color: var(--el-text-color-disabled);
+  }
+
+  .el-select__wrapper.is-disabled {
+    background-color: var(--el-fill-color);
+  }
+
+  .el-pager li.is-active.is-disabled {
+    font-weight: normal;
+    color: var(--el-text-color-disabled);
+  }
+}
+
+.el-pagination.is-background {
+
+  .btn-next.is-active,
+  .btn-prev.is-active,
+  .el-pager li.is-active {
+    background-color: var(--el-color-primary);
+    color: var(--el-color-white);
+  }
+
+  button.btn-next,
+  button.btn-prev,
+  .el-pager li.number,
+  .el-pager li.more {
+    background-color: var(--el-fill-color-lighter);
+  }
+
+  button.btn-next.is-disabled,
+  button.btn-next:disabled,
+  button.btn-prev.is-disabled,
+  button.btn-prev:disabled,
+  .el-pager li.number.is-disabled,
+  .el-pager li.number:disabled {
+    background-color: var(--el-fill-color);
+    color: var(--el-text-color-disabled);
+  }
+
+  .el-select__wrapper.is-disabled .el-select__selected-item {
+    color: var(--el-text-color-disabled);
+  }
+
+  .el-select__wrapper.is-disabled {
+    background-color: var(--el-fill-color);
+  }
+
+  .el-pager li.is-active.is-disabled {
+    font-weight: normal;
+    color: var(--el-text-color-disabled);
+  }
+}
+
+
+// el-link样式
+.el-link {
+  font-size: 1.4rem;
+}
+
+.el-link__inner {
+  .el-icon {
+    height: 1.4rem;
+    width: 1.4rem;
+  }
+
+  .el-icon:last-child {
+    margin-right: 0.7rem;
+  }
+
+  .el-icon:first-child {
+    margin-left: 0.7rem;
+  }
+}
+
+.el-link.el-link--default.is-disabled {
+  color: var(--el-text-color-disabled);
+}
+
+.el-link.el-link--primary.is-disabled {
+  color: var(--el-color-primary-light-7);
+}
+
+.el-link.el-link--danger:hover {
+  color: var(--cv-link-danger-hover);
+}
+
+.el-link.el-link--danger.is-disabled {
+  color: var(--cv-link-danger-disabled);
+}
+
+// el-dropdown样式
+.el-dropdown {
+  .el-dropdown-menu__item {
+    color: var(--el-text-color-regular);
+    min-width: 12.2rem;
+  }
+
+  .el-dropdown-menu__item:not(.is-disabled):focus,
+  .el-dropdown-menu__item:not(.is-disabled):hover {
+    background-color: var(--el-fill-color-extra-light);
+  }
+
+  .el-dropdown-menu--large .el-dropdown-menu__item {
+    line-height: 2.6rem;
+    padding: 0.7rem 1.6rem;
+  }
+
+  .el-dropdown-menu--medium .el-dropdown-menu__item {
+    line-height: 2.2rem;
+    padding: 0.5rem 1.6rem;
+  }
+
+  .el-dropdown-menu--small .el-dropdown-menu__item {
+    line-height: 2.2rem;
+    padding: 0.2rem 1.6rem;
+  }
+
+  .el-icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .el-button {
+    font-weight: 400;
+  }
+
+  .el-button:hover {
+    color: var(--el-text-color-regular);
+    border-color: var(--el-color-primary-light-3);
+  }
+
+  .el-button:active {
+    color: var(--el-text-color-regular);
+    border-color: var(--el-color-primary-dark-2);
+  }
+
+  .el-button.is-disabled {
+    background-color: var(--el-fill-color-lighter);
+  }
+
+  .el-button.is-disabled:hover {
+    background-color: var(--el-fill-color-lighter);
+    border-color: var(--el-button-disabled-border-color);
+    color: var(--el-button-disabled-text-color);
+  }
+
+  .el-button:focus-visible {
+    outline: 0px;
+  }
+
+  .el-button-group .el-button:hover,
+  .el-button-group .el-button:active {
+    color: var(--el-color-white);
+    background-color: var(--el-color-primary);
+  }
+
+  .el-button-group .el-dropdown__caret-button:hover {
+    background-color: var(--el-color-primary-light-3);
+  }
+
+  .el-button-group .el-dropdown__caret-button:active {
+    background-color: var(--el-color-primary-dark-2);
+  }
+
+  .el-button-group .el-button.is-disabled {
+    background-color: var(--el-color-primary);
+  }
+
+  .el-button.el-dropdown__caret-button.is-disabled {
+    background-color: var(--el-color-primary-light-7);
+    border-color: var(--el-color-primary-light-7);
+  }
+
+  :focus-visible {
+    outline: 0px;
+  }
+}
+
+// 优化下拉框触发元素的样式
+.el-dropdown>span {
+  padding: 8px;
+}
+
+.el-dropdown>span:hover {
+  background-color: var(--el-fill-color-lighter);
+}
+
+.el-dropdown>span:active {
+  background-color: var(--el-fill-color);
+}
+
+.el-dropdown.is-disabled span:hover {
+  background-color: transparent;
+}
+
+.el-dropdown.is-disabled span:active {
+  background-color: transparent;
+}
+
+//probreadcrumb-item样式
+.el-breadcrumb {
+  .el-breadcrumb__separator {
+    color: var(--el-text-color-secondary);
+  }
+  .el-breadcrumb__item:last-child .el-breadcrumb__inner,
+  .el-breadcrumb__item:last-child .el-breadcrumb__inner a,
+  .el-breadcrumb__item:last-child .el-breadcrumb__inner a:hover,
+  .el-breadcrumb__item:last-child .el-breadcrumb__inner:hover {
+    color: var(--el-text-color-secondary);
+  }
+}
+// el-tabs样式
+.el-tabs{
+  .el-tabs__item:is(:not(:hover):not(:active):not(:focus):not(.is-active)) {
+    color: var(--el-text-color-regular);
+  }
+}
+
+// el-steps样式
+.el-steps{
+  .is-process{
+    .el-step__icon.is-text {
+        background-color: var(--el-color-primary);
+        border-color: var(--el-color-primary);
+        color: #ffffff;
+    }
+    .el-step__icon.is-icon {
+        color:var(--el-color-primary);
+    }
+  }
+}
+
+// v-loading 样式
+[element-loading-size='small'] > .el-loading-mask .circular {
+  height: 1.2rem;
+  width: 1.2rem;
+}
+
+[element-loading-size='large'] > .el-loading-mask .circular {
+  height: 4.4rem;
+  width: 4.4rem;
+}
+
+.el-loading-mask .circular {
+  height: 3.2rem;
+  width: 3.2rem;
+}
+
+.el-loading-mask.is-fullscreen .el-loading-spinner .circular {
+  height: 3.2rem;
+  width: 3.2rem;
+}

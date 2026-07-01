@@ -1,0 +1,58 @@
+.el-message {
+    .el-message__content {
+        font-size: 1.2rem;
+    }
+
+    .el-icon {
+        height: 1.4rem;
+        width: 1.4rem;
+        line-height: 1.4rem;
+        font-size: 1.4rem;
+        svg {
+           height: 1.4rem;
+           width: 1.4rem;
+        }
+    }
+    .el-message__closeBtn {
+        height: 1.6rem;
+        width: 1.6rem;
+    }
+
+}
+
+.el-message.el-message--success {
+    border-color:var(--cv-message-success-border-color);
+    .el-message__closeBtn {
+        color: var(--el-message-text-color)
+    }
+}
+.el-message.el-message--warning {
+    border-color:var(--cv-message-warning-border-color);
+    .el-message__closeBtn {
+        color: var(--el-color-warning)
+    }
+}
+.el-message.el-message--error {
+    border-color:var(--cv-message-error-border-color);
+    .el-message__closeBtn {
+        color: var(--el-color-error)
+    }
+}
+.el-message.el-message--info {
+    border-color:var(--cv-message-info-border-color);
+    .el-message__closeBtn {
+        color: var(--el-color-info)
+    }
+}
+.el-message.el-message--primary {
+    .el-message__closeBtn {
+        color: var(--el-color-primary)
+    }
+}
+
+.el-message.is-plain.el-message--success,
+.el-message.is-plain.el-message--warning,
+.el-message.is-plain.el-message--error,
+.el-message.is-plain.el-message--info{
+    border-color: var(--el-bg-color-overlay);
+}

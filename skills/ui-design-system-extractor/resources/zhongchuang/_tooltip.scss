@@ -1,0 +1,8 @@
+.el-popper.is-light{
+    border: 1px solid var(--el-border-color-lighter) !important;
+    box-shadow: var(--el-box-shadow-light);
+}
+.el-popper.is-dark{
+    border: 0.1rem solid rgba(226,234,246,0.00);
+    box-shadow:  var(--el-box-shadow-light);
+}
