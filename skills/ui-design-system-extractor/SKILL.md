@@ -245,32 +245,45 @@ Do NOT invoke when:
   <link rel="stylesheet" href="../overrides/element-plus-theme-override.css">
 </head>
 <body>
-  <h1>Element Plus · 新主题预览</h1>
+  <!-- Element Plus 是 Vue 3 组件库, 必须有 Vue + Element Plus JS 才能渲染 -->
+  <div id="app">
+    <h1>Element Plus · 新主题预览</h1>
 
-  <section>
-    <h2>颜色</h2>
-    <div class="swatch primary-500">Primary 500</div>
-    <div class="swatch primary-100">Primary 100</div>
-    <!-- ... -->
-  </section>
+    <section>
+      <h2>Button</h2>
+      <el-button type="primary">Primary</el-button>
+      <el-button type="success">Success</el-button>
+      <el-button type="warning">Warning</el-button>
+      <el-button type="danger">Danger</el-button>
+      <el-button>Default</el-button>
+      <el-button disabled>Disabled</el-button>
+    </section>
 
-  <section>
-    <h2>Button</h2>
-    <el-button type="primary">Primary</el-button>
-    <el-button type="success">Success</el-button>
-    <el-button type="warning">Warning</el-button>
-    <el-button type="danger">Danger</el-button>
-    <el-button>Default</el-button>
-    <el-button disabled>Disabled</el-button>
-  </section>
+    <section>
+      <h2>Input</h2>
+      <el-input placeholder="Default"></el-input>
+      <el-input placeholder="Disabled" disabled></el-input>
+    </section>
 
-  <section>
-    <h2>Input</h2>
-    <el-input placeholder="Default"></el-input>
-    <el-input placeholder="Disabled" disabled></el-input>
-  </section>
+    <!-- 完整版本 50+ 组件 + 6 sub-block color system,
+         见 references/preview-comprehensive.md -->
+  </div>
 
-  <!-- ... 至少展示 5 个常见组件, 覆盖 default / hover / active / disabled 状态 -->
+  <!-- Vue 3 全局变量 (UMD 版, 用于纯 HTML demo) -->
+  <script src="https://unpkg.com/vue@3"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+  <script>
+    const App = {
+      template: document.querySelector('#app').innerHTML
+    }
+    const app = Vue.createApp(App)
+    app.use(ElementPlus)
+    for (const [name, comp] of Object.entries(ElementPlusIconsVue)) {
+      app.component(name, comp)
+    }
+    app.mount('#app')
+  </script>
 </body>
 </html>
 ```

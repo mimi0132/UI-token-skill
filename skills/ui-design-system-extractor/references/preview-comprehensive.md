@@ -148,6 +148,55 @@ body {
   border-bottom: 1px solid var(--color-border-default);
   z-index: 100;
 }
+
+/* ===== Color System swatch (Category 0 用) ===== */
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+.swatch {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 96px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+.swatch__name { font-weight: 600; }
+.swatch__var  {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  opacity: 0.7;
+}
+.text-sample {
+  font-size: var(--font-size-md);
+  padding: var(--space-2) 0;
+  font-family: var(--font-family-body);
+}
+.bg-sample {
+  min-height: 64px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  padding: 0 var(--space-3);
+}
+.border-sample {
+  min-height: 56px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  padding: 0 var(--space-3);
+}
 ```
 
 **布局原则**:

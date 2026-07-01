@@ -686,10 +686,19 @@ grep -E "color-mix\(in srgb" tokens/colors.css
 grep -q "data-theme" overrides/<lib>-theme-override.css
 
 # 7. Preview file exists
-test -f preview/preview.html
+test -f preview/comprehensive-preview.html
 
 # 8. README has integration snippet
 grep -q "import" README.md
+
+# 9. Preview directory strictly contains 1 .html file
+#    (前几版会多生成 dashboard-xxx.html / user-list-xxx.html / preview.html, 必须拦截)
+PREVIEW_COUNT=$(ls preview/*.html 2>/dev/null | wc -l | tr -d ' ')
+[ "$PREVIEW_COUNT" = "1" ] || {
+  echo "preview/ 应只有 1 个文件 (comprehensive-preview.html), 实际有 $PREVIEW_COUNT 个:"
+  ls preview/
+  exit 1
+}
 ```
 
 If any check fails, fix before outputting.
