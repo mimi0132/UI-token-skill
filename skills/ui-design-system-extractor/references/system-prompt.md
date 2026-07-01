@@ -570,7 +570,7 @@ For each component in the design, verify these states render consistently:
 | **Input**              | default / hover / focus / disabled / error / readonly             | `--<lib>-input-border-color`, `-text-color-regular/placeholder`, `-fill-color` |
 | **Tag**                | default + each color (primary / success / warning / danger / info) | All semantic color light/dark stops  |
 | **Card**               | default / hover (if interactive)                                   | `--<lib>-bg-color`, `-border-color-lighter` |
-| **Dialog / Drawer**    | default + overlay                                                  | `--<lib>-bg-color`, `-bg-overlay`     |
+| **Dialog / Drawer**    | default + overlay                                                  | `--<lib>-bg-color`, `--<lib>-bg-color-overlay` (dialog 自身背景), `--<lib>-mask-color` (遮罩层) |
 | **Table**              | default / striped / hover / selected / empty                       | `--<lib>-table-border-color`, `-table-row-hover-bg-color`, `-table-header-bg-color` |
 | **Select / Dropdown**  | default / hover / open / selected / disabled                       | `--<lib>-border-color-hover`, `-fill-color-light`, `-text-color-primary` |
 | **Form**               | default / error / disabled                                         | `--<lib>-form-item-label-color`, `-form-item-error-color` |

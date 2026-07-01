@@ -329,6 +329,7 @@ Rules:
   --color-bg-primary:    var(--color-neutral-50);
   --color-bg-secondary:  var(--color-neutral-100);
   --color-bg-elevated:   white;
+  --color-bg-hover:      var(--color-neutral-100);
 
   /* 5 级文字对比阶梯 (从最强到最弱):
      primary > regular > secondary > placeholder > disabled
@@ -340,9 +341,10 @@ Rules:
   --color-text-disabled:    var(--color-neutral-400);
   --color-text-inverse:     white;
 
-  --color-border-default: var(--color-neutral-200);
-  --color-border-strong:  var(--color-neutral-300);
-  --color-border-focus:   var(--color-primary-500);
+  --color-border-default:   var(--color-neutral-200);
+  --color-border-strong:    var(--color-neutral-300);
+  --color-border-focus:     var(--color-primary-500);
+  --color-border-focus-soft: color-mix(in srgb, var(--color-primary-500) 24%, transparent);
 }
 ```
 
@@ -353,6 +355,7 @@ Rules:
   --color-bg-primary:    var(--color-neutral-900);
   --color-bg-secondary:  var(--color-neutral-800);
   --color-bg-elevated:   var(--color-neutral-700);
+  --color-bg-hover:      var(--color-neutral-700);
 
   /* 暗色下保持 5 级对比阶梯, 但颜色明度反转:
      primary(最亮) > regular > secondary > placeholder > disabled(最暗) */
@@ -361,9 +364,12 @@ Rules:
   --color-text-secondary:   var(--color-neutral-400);
   --color-text-placeholder: var(--color-neutral-500);
   --color-text-disabled:    var(--color-neutral-600);
+  --color-text-inverse:     var(--color-neutral-900);
 
-  --color-border-default: var(--color-neutral-700);
-  --color-border-strong:  var(--color-neutral-600);
+  --color-border-default:   var(--color-neutral-700);
+  --color-border-strong:    var(--color-neutral-600);
+  --color-border-focus:     var(--color-primary-500);
+  --color-border-focus-soft: color-mix(in srgb, var(--color-primary-500) 32%, transparent);
 }
 ```
 

@@ -60,18 +60,29 @@ Agent 会:
 
 ### 1. 引入主题文件
 
+> 约定: 所有主题文件放在项目根 `ui-theme/` 目录下,包含 `tokens/` (设计令牌) 和 `overrides/` (覆盖文件) 两个子目录,结构如下:
+> ```
+> project-root/
+> ├── ui-theme/
+> │   ├── tokens/theme.css        # 设计令牌 (定义 --color-*, --space-*, --radius-* 等)
+> │   └── overrides/<lib>-theme-override.css   # 主题覆盖 (把 --el-*/--ant-*/--cv-* 映射到 --color-*)
+> ├── src/
+> │   └── styles/zhongchuang/     # 中创 scss 布局补丁 (仅中创需要,见 resources/zhongchuang/)
+> └── main.js
+> ```
+
 ```js
 // main.js (Vue 3 + Element Plus)
-import 'element-plus/dist/index.css'              // 1. 库 CSS
-import './tokens/theme.css'                       // 2. ⭐ 我们 token (定义 --color-*)
-import './overrides/element-plus-theme-override.css'  // 3. ⭐ 主题覆盖 (把 --el-* 映射到 --color-*)
+import 'element-plus/dist/index.css'                  // 1. 库 CSS
+import './ui-theme/tokens/theme.css'                  // 2. ⭐ 我们 token (定义 --color-*)
+import './ui-theme/overrides/element-plus-theme-override.css'  // 3. ⭐ 主题覆盖 (把 --el-* 映射到 --color-*)
 ```
 
 ```js
 // main.js (Vue 3 + 中创组件库)
-import 'element-plus/dist/index.css'                     // 1. 库 CSS
-import './tokens/theme.css'                              // 2. ⭐ 我们 token (定义 --color-*)
-import './overrides/zhongchuang-theme-override.css'      // 3. ⭐ override (--el-* + --cv-*)
+import 'element-plus/dist/index.css'                         // 1. 库 CSS
+import './ui-theme/tokens/theme.css'                          // 2. ⭐ 我们 token (定义 --color-*)
+import './ui-theme/overrides/zhongchuang-theme-override.css'  // 3. ⭐ override (--el-* + --cv-*)
 import '@/styles/zhongchuang/_element.scss'              // 4. 中创 scss 布局补丁
                                                        //    (从 skill 的 resources/zhongchuang/ 复制)
 ```

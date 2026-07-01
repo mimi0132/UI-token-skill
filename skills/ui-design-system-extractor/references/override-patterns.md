@@ -120,6 +120,8 @@ import './ui-theme/overrides/element-plus-theme-override.css'
   --el-bg-color:                 var(--color-bg-primary);
   --el-bg-color-page:            var(--color-bg-secondary);
   --el-bg-color-overlay:         var(--color-bg-elevated);
+  --el-mask-color:               rgba(0, 0, 0, 0.5);
+  --el-mask-color-extra-light:   rgba(0, 0, 0, 0.1);
 
   /* ===== Text ===== */
   --el-text-color-primary:       var(--color-text-primary);
@@ -358,9 +360,9 @@ export const themeOverrides = {
     textColor1:             'var(--color-text-primary)',
     textColor2:             'var(--color-text-primary)',
     textColor3:             'var(--color-text-secondary)',
-    placeholderColor:       'var(--color-text-disabled)',
-    placeholderColorHover:  'var(--color-text-disabled)',
-    placeholderColorPressed:'var(--color-text-disabled)',
+    placeholderColor:       'var(--color-text-placeholder)',
+    placeholderColorHover:  'var(--color-text-placeholder)',
+    placeholderColorPressed:'var(--color-text-placeholder)',
     iconColor:              'var(--color-text-secondary)',
     iconColorHover:         'var(--color-text-primary)',
     iconColorPressed:       'var(--color-text-primary)',
@@ -423,7 +425,7 @@ import './ui-theme/tokens/theme.css'
   --text-color-1:            var(--color-text-primary);
   --text-color-2:            var(--color-text-primary);
   --text-color-3:            var(--color-text-secondary);
-  --placeholder-color:       var(--color-text-disabled);
+  --placeholder-color:       var(--color-text-placeholder);
   --border-color:            var(--color-border-default);
   --border-radius:           var(--radius-md);
   --border-radius-small:     var(--radius-sm);
@@ -452,8 +454,8 @@ import './globals.css'  // shadcn's own CSS
 @import '../tokens/theme.css';
 
 :root {
-  /* shadcn requires HSL components, not full color values.
-     Convert: hsl(var(--color-primary-hsl)) */
+  /* shadcn requires HSL components (e.g. "239 84% 67%"), not full color values.
+     If your tokens use HEX/RGB, see "Heads up" below for the two workarounds. */
 
   --background:                       var(--color-bg-primary);
   --foreground:                       var(--color-text-primary);
@@ -704,7 +706,7 @@ export const theme = extendTheme({
       'chakra-border-color':    { default: 'var(--color-border-default)', _dark: 'var(--color-border-default)' },
       'chakra-subtle-bg':       { default: 'var(--color-bg-secondary)',  _dark: 'var(--color-bg-elevated)' },
       'chakra-subtle-text':     { default: 'var(--color-text-secondary)', _dark: 'var(--color-text-secondary)' },
-      'chakra-placeholder':     { default: 'var(--color-text-disabled)',  _dark: 'var(--color-text-disabled)' },
+      'chakra-placeholder':     { default: 'var(--color-text-placeholder)',  _dark: 'var(--color-text-placeholder)' },
     },
   },
   colors: {
@@ -924,6 +926,8 @@ cp -r <skill-install-path>/resources/zhongchuang ./src/styles/
   --el-bg-color:                var(--color-bg-primary);
   --el-bg-color-page:           var(--color-bg-primary);
   --el-bg-color-overlay:        var(--color-bg-elevated);
+  --el-mask-color:              rgba(0, 0, 0, 0.5);
+  --el-mask-color-extra-light:  rgba(0, 0, 0, 0.1);
 
   /* ===== 填充色(中创的 el-pagination / el-input 大量用) ===== */
   --el-fill-color:              var(--color-neutral-100);
