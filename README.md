@@ -62,15 +62,17 @@ Agent 会:
 
 ```js
 // main.js (Vue 3 + Element Plus)
-import 'element-plus/dist/index.css'              // 库 CSS
-import './overrides/element-plus-theme-override.css'  // ⭐ 主题覆盖
+import 'element-plus/dist/index.css'              // 1. 库 CSS
+import './tokens/theme.css'                       // 2. ⭐ 我们 token (定义 --color-*)
+import './overrides/element-plus-theme-override.css'  // 3. ⭐ 主题覆盖 (把 --el-* 映射到 --color-*)
 ```
 
 ```js
 // main.js (Vue 3 + 中创组件库)
 import 'element-plus/dist/index.css'                     // 1. 库 CSS
-import './overrides/zhongchuang-theme-override.css'      // 2. ⭐ override (--el-* + --cv-*)
-import '@/styles/zhongchuang/_element.scss'              // 3. 中创 scss 布局补丁
+import './tokens/theme.css'                              // 2. ⭐ 我们 token (定义 --color-*)
+import './overrides/zhongchuang-theme-override.css'      // 3. ⭐ override (--el-* + --cv-*)
+import '@/styles/zhongchuang/_element.scss'              // 4. 中创 scss 布局补丁
                                                        //    (从 skill 的 resources/zhongchuang/ 复制)
 ```
 

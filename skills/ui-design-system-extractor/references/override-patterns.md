@@ -119,13 +119,13 @@ import './ui-theme/overrides/element-plus-theme-override.css'
   /* ===== Background ===== */
   --el-bg-color:                 var(--color-bg-primary);
   --el-bg-color-page:            var(--color-bg-secondary);
-  --el-bg-overlay:               var(--color-bg-elevated);
+  --el-bg-color-overlay:         var(--color-bg-elevated);
 
   /* ===== Text ===== */
   --el-text-color-primary:       var(--color-text-primary);
-  --el-text-color-regular:       var(--color-text-primary);
+  --el-text-color-regular:       var(--color-text-regular);
   --el-text-color-secondary:     var(--color-text-secondary);
-  --el-text-color-placeholder:   var(--color-text-disabled);
+  --el-text-color-placeholder:   var(--color-text-placeholder);
   --el-text-color-disabled:      var(--color-text-disabled);
 
   /* ===== Typography ===== */
@@ -145,9 +145,9 @@ import './ui-theme/overrides/element-plus-theme-override.css'
 [data-theme="dark"] {
   --el-bg-color:                 var(--color-bg-primary);
   --el-bg-color-page:            var(--color-bg-primary);
-  --el-bg-overlay:               var(--color-bg-elevated);
+  --el-bg-color-overlay:         var(--color-bg-elevated);
   --el-text-color-primary:       var(--color-text-primary);
-  --el-text-color-regular:       var(--color-text-primary);
+  --el-text-color-regular:       var(--color-text-regular);
   --el-text-color-secondary:     var(--color-text-secondary);
   --el-fill-color-blank:         var(--color-bg-elevated);
   --el-border-color:             var(--color-border-default);
@@ -225,7 +225,7 @@ import './ui-theme/overrides/antd-theme-override.css'
   --ant-color-text-secondary:    var(--color-text-secondary);
   --ant-color-text-tertiary:     var(--color-text-secondary);
   --ant-color-text-quaternary:   var(--color-text-disabled);
-  --ant-color-text-placeholder:  var(--color-text-disabled);
+  --ant-color-text-placeholder:  var(--color-text-placeholder);
   --ant-color-text-disabled:     var(--color-text-disabled);
   --ant-color-text-heading:      var(--color-text-primary);
   --ant-color-text-description:  var(--color-text-secondary);
