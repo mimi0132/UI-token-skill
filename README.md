@@ -2,7 +2,7 @@
 
 > **从设计稿给现有组件库换皮肤 —— 保留交互,只换视觉。**
 
-项目用的是 Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra 等,拿到一份新设计稿,你想让所有组件**看起来像新设计**(颜色、字体、间距、栅格、圆角、阴影、边框、动效全部跟着走),但**点击 / 键盘 / 焦点 / 表单 / 弹窗 / 无障碍 / 滚动 / 动画时序一行不动**?用这个 skill。
+项目用的是 Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra / Vuetify / 中创 fork 等,拿到一份新设计稿,你想让所有组件**看起来像新设计**(颜色、字体、间距、栅格、圆角、阴影、边框、动效全部跟着走),但**点击 / 键盘 / 焦点 / 表单 / 弹窗 / 无障碍 / 滚动 / 动画时序一行不动**?用这个 skill。
 
 **只 import 一个 CSS 文件**,搞定。
 
@@ -13,6 +13,7 @@
 - 🎨 **15 维度提取** — 颜色、字体、字号、字重、行高、间距、圆角、阴影、边框、栅格、容器、断点、图标尺寸、动效曲线、焦点环
 - 🔄 **变量自动推导** — 单锚点 + `color-mix` / `calc` / 几何级数,即使设计稿只给 1 个值也能生成完整 10 档色阶 + 4 档间距 + 4 档圆角
 - 🧩 **8 大组件库** — Element Plus · Ant Design · Ant Design Vue · Naive UI · shadcn · MUI · Chakra · Vuetify
+- 🏢 **公司内部 fork 也支持** — 中创组件库 (Element Plus fork) 等,沿用 EP 前缀并扩展 `--cv-*` 自定义变量
 - 🌓 **暗色模式** — 一行 `data-theme` 切换,色阶自动反转
 - 🎯 **交互零侵入** — 组件库原有的点击 / 键盘 / 焦点 / 表单 / 弹窗 / 滚动 / a11y / API / 受控逻辑 一行代码不动
 - 📦 **零依赖** — 不需要 Tailwind / 预处理器 / 构建工具
@@ -65,6 +66,13 @@ import 'element-plus/dist/index.css'              // 库 CSS
 import './overrides/element-plus-theme-override.css'  // ⭐ 主题覆盖
 ```
 
+```js
+// main.js (Vue 3 + 中创组件库)
+import 'element-plus/dist/index.css'                     // 1. 库 CSS
+import './overrides/zhongchuang-theme-override.css'      // 2. ⭐ override
+import 'zhongchuang/dist/index.scss'                     // 3. 中创 scss 补丁
+```
+
 ### 2. 切暗色模式
 
 ```js
@@ -108,7 +116,12 @@ UI-token-skill/
 
 - **Vue**: Element Plus · Ant Design Vue · Naive UI · Vuetify
 - **React**: Ant Design · shadcn/ui · MUI · Chakra UI
+- **公司内部 fork**: 中创组件库 (Element Plus fork) · 其他 `--el-*` / `--ant-*` 前缀的内部库
 - **其它**: fork 自这些库的公司内部组件库也支持,只要走 CSS 变量
+
+> **中创组件库特别说明**: 中创沿用 EP 的 `--el-` 前缀,并扩展了 `--cv-message-*` 等
+> 自定义变量,我们的 override 模板 + 集成方式见
+> [override-patterns.md#中创组件库](skills/ui-design-system-extractor/references/override-patterns.md#中创组件库-vue-3-element-plus-fork)
 
 ---
 
@@ -140,6 +153,16 @@ UI-token-skill/
 
 **我用的是 Element Plus 的暗黑 / Fluid / 其他主题?**
 都支持,override 文件在它们之后加载就能覆盖。Element Plus 默认用 `--el-color-primary`,hover 状态用 `--el-color-primary-light-3` 等,override 文件会一并映射。
+
+**我用的是中创组件库 (Element Plus fork)?**
+直接告诉 Agent "组件库是中创" 即可,会用 `overrides/zhongchuang-theme-override.css` 模板:
+- `--el-*` 全套(中创沿用 EP 前缀)
+- `--cv-message-success/warning/error/info-border-color` 等中创扩展
+- 中创自家的 `_element.scss` 布局补丁在 override 之后 import,两者互补
+
+**我用的是其他公司 fork 库 (前缀 `--my-` / `--ant-xxx-`)?**
+见 [override-patterns.md#working-with-forked](skills/ui-design-system-extractor/references/override-patterns.md#working-with-forked--internal-component-libraries),
+用 prefix transform 脚本批量重命名模板。
 
 更多问题看 [SKILL.md#faq](skills/ui-design-system-extractor/SKILL.md)。
 

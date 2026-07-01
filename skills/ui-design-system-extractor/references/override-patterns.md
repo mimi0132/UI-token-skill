@@ -20,6 +20,7 @@ The libs have ~50–200 CSS variables for a reason — every one affects some vi
 6. [MUI (React)](#mui-react)
 7. [Chakra UI (React)](#chakra-ui-react)
 8. [Vuetify (Vue 3)](#vuetify-vue-3)
+9. [中创组件库 (Vue 3, Element Plus fork)](#中创组件库-vue-3-element-plus-fork)
 
 ---
 
@@ -771,6 +772,282 @@ export const vuetify = createVuetify({
 
 ---
 
+## 中创组件库 (Vue 3, Element Plus fork)
+
+> **背景**: 中创组件库 = 公司内部基于 **Element Plus 1.x/2.x fork** 的组件库,沿用 `--el-`
+> 前缀,在此基础上**扩展**了若干 `--cv-` 前缀的自定义变量,并配套了 `_element.scss` /
+> `_tooltip.scss` / `_avatar.scss` / `_message.scss` / `_popconfirm.scss` 等补丁,
+> 覆盖了 el-alert / el-table / el-drawer / el-dialog / el-input / el-select /
+> el-textarea / el-input-number / el-pagination / el-popper / el-avatar / el-message
+> / el-popconfirm 等组件的尺寸 / 边框 / 阴影 / 文字色细节。
+>
+> 我们的 skill 在中创上 = **变量覆盖 + scss 补丁并行**,两者互补不冲突。
+
+### 怎么识别是不是中创
+
+| 特征 | 含义 |
+|------|------|
+| `package.json` 依赖里有 `element-plus` | 上游是 EP |
+| 项目里有 `cv-*.scss` 或 `_element.scss` 风格文件 | 中创扩展 |
+| CSS 变量前缀是 `--el-` (没改) | 中创沿用 EP 前缀 |
+| 但额外有 `--cv-message-success-border-color` 之类的 `--cv-` 变量 | 中创自定义扩展 |
+| 使用了 `rem` 而非 EP 默认的 `px` 单位 | 中创的单位体系 |
+
+### Required import
+
+中创需要 SCSS 编译(因为它有自己的 `_element.scss` 补丁),所以比普通 Element Plus 多一个步骤。
+
+```ts
+// main.ts
+import 'element-plus/dist/index.css'                                    // 1. 库 CSS
+import './ui-theme/tokens/theme.css'                                     // 2. token
+import './ui-theme/overrides/zhongchuang-theme-override.css'             // 3. override (CSS 变量映射)
+import '@your-scope/zhongchuang/dist/style.scss'                         // 4. 中创 scss 补丁(放最后)
+```
+
+或者用 Vite:
+
+```ts
+// main.ts
+import 'element-plus/dist/index.css'
+import './ui-theme/tokens/theme.css'
+import './ui-theme/overrides/zhongchuang-theme-override.css'
+import 'zhongchuang/dist/index.scss'  // 中创的 scss 入口
+```
+
+> **顺序很关键**: 中创 scss 必须在 override 之后加载,因为 scss 里的 `!important` /
+> 精确 padding 等细节会"压住"我们 CSS 变量映射。但我们的颜色 / 字号 / 圆角已经在
+> override 阶段设好了,scss 不会动这些。
+
+### Override file 模板
+
+```css
+/* overrides/zhongchuang-theme-override.css */
+@import '../tokens/theme.css';
+
+:root {
+  /* ===== Element Plus 基础色(中创沿用 --el- 前缀) ===== */
+  --el-color-primary:           var(--color-primary-500);
+  --el-color-primary-light-3:   var(--color-primary-300);
+  --el-color-primary-light-5:   var(--color-primary-100);
+  --el-color-primary-light-7:   var(--color-primary-50);
+  --el-color-primary-light-8:   var(--color-primary-50);
+  --el-color-primary-light-9:   var(--color-primary-50);
+  --el-color-primary-dark-2:    var(--color-primary-700);
+
+  --el-color-success:           var(--color-success-500);
+  --el-color-success-light-3:   var(--color-success-300);
+  --el-color-success-light-5:   var(--color-success-100);
+  --el-color-success-light-7:   var(--color-success-50);
+  --el-color-success-light-8:   var(--color-success-50);
+  --el-color-success-light-9:   var(--color-success-50);
+  --el-color-success-dark-2:    var(--color-success-700);
+
+  --el-color-warning:           var(--color-warning-500);
+  --el-color-warning-light-3:   var(--color-warning-300);
+  --el-color-warning-light-5:   var(--color-warning-100);
+  --el-color-warning-light-7:   var(--color-warning-50);
+  --el-color-warning-light-8:   var(--color-warning-50);
+  --el-color-warning-light-9:   var(--color-warning-50);
+  --el-color-warning-dark-2:    var(--color-warning-700);
+
+  --el-color-danger:            var(--color-danger-500);
+  --el-color-danger-light-3:    var(--color-danger-300);
+  --el-color-danger-light-5:    var(--color-danger-100);
+  --el-color-danger-light-7:    var(--color-danger-50);
+  --el-color-danger-light-8:    var(--color-danger-50);
+  --el-color-danger-light-9:    var(--color-danger-50);
+  --el-color-danger-dark-2:     var(--color-danger-700);
+
+  --el-color-error:             var(--color-danger-500);
+  --el-color-error-light-3:     var(--color-danger-300);
+  --el-color-error-light-5:     var(--color-danger-100);
+  --el-color-error-light-7:     var(--color-danger-50);
+  --el-color-error-light-8:     var(--color-danger-50);
+  --el-color-error-light-9:     var(--color-danger-50);
+  --el-color-error-dark-2:      var(--color-danger-700);
+
+  --el-color-info:              var(--color-info-500);
+  --el-color-info-light-3:      var(--color-info-300);
+  --el-color-info-light-5:      var(--color-info-100);
+  --el-color-info-light-7:      var(--color-info-50);
+  --el-color-info-light-8:      var(--color-info-50);
+  --el-color-info-light-9:      var(--color-info-50);
+  --el-color-info-dark-2:       var(--color-info-700);
+
+  --el-color-white:             #ffffff;
+  --el-color-black:             #000000;
+
+  /* ===== 文字色(中创重点用 --el-text-color-*) ===== */
+  --el-text-color-primary:      var(--color-text-primary);
+  --el-text-color-regular:      var(--color-text-regular);
+  --el-text-color-secondary:    var(--color-text-secondary);
+  --el-text-color-placeholder:  var(--color-text-placeholder);
+  --el-text-color-disabled:     var(--color-text-disabled);
+
+  /* ===== 背景色 ===== */
+  --el-bg-color:                var(--color-bg-primary);
+  --el-bg-color-page:           var(--color-bg-primary);
+  --el-bg-color-overlay:        var(--color-bg-elevated);
+
+  /* ===== 填充色(中创的 el-pagination / el-input 大量用) ===== */
+  --el-fill-color:              var(--color-neutral-100);
+  --el-fill-color-light:        var(--color-neutral-50);
+  --el-fill-color-lighter:      var(--color-neutral-50);
+  --el-fill-color-extra-light:  var(--color-neutral-50);
+  --el-fill-color-blank:        #ffffff;
+
+  /* ===== 边框色 ===== */
+  --el-border-color:            var(--color-border-default);
+  --el-border-color-light:      var(--color-border-default);
+  --el-border-color-lighter:    var(--color-border-default);
+  --el-border-color-extra-light: var(--color-border-default);
+  --el-border-color-hover:      var(--color-border-strong);
+
+  /* ===== 圆角 ===== */
+  --el-border-radius-base:      var(--radius-md);
+  --el-border-radius-small:     var(--radius-sm);
+  --el-border-radius-round:     var(--radius-full);
+  --el-border-radius-circle:    var(--radius-full);
+
+  /* ===== 阴影 ===== */
+  --el-box-shadow:              var(--shadow-md);
+  --el-box-shadow-light:        var(--shadow-sm);
+  --el-box-shadow-lighter:      var(--shadow-sm);
+  --el-box-shadow-dark:         var(--shadow-lg);
+
+  /* ===== 禁用遮罩 ===== */
+  --el-disabled-bg-color:       var(--color-neutral-100);
+  --el-disabled-text-color:     var(--color-text-disabled);
+  --el-disabled-border-color:   var(--color-border-default);
+
+  /* ===== 文字字号(中创用 rem 单位,映射到 token) ===== */
+  --el-font-size-extra-small:   var(--font-size-xs);
+  --el-font-size-small:         var(--font-size-sm);
+  --el-font-size-base:          var(--font-size-base);
+  --el-font-size-medium:        var(--font-size-md);
+  --el-font-size-large:         var(--font-size-lg);
+  --el-font-size-extra-large:   var(--font-size-xl);
+
+  /* ===== Pagination(中创的 el-pagination 有 hover-color 自定义) ===== */
+  --el-pagination-hover-color:  var(--color-primary-500);
+
+  /* ===== Input placeholder ===== */
+  --el-input-placeholder-color: var(--color-text-placeholder);
+
+  /* ===== Message 文字色 ===== */
+  --el-message-text-color:      var(--color-text-primary);
+
+  /* ===== 中创扩展的 --cv- 自定义变量(从 _message.scss 反推) ===== */
+  --cv-message-success-border-color: var(--color-success-500);
+  --cv-message-warning-border-color: var(--color-warning-500);
+  --cv-message-error-border-color:   var(--color-danger-500);
+  --cv-message-info-border-color:    var(--color-info-500);
+}
+
+[data-theme="dark"] {
+  /* 暗色模式:中创跟随 EP 默认的暗色映射,我们把基础色和文字色都反转 */
+  --el-text-color-primary:      var(--color-neutral-50);
+  --el-text-color-regular:      var(--color-neutral-300);
+  --el-text-color-secondary:    var(--color-neutral-400);
+  --el-text-color-placeholder:  var(--color-neutral-500);
+  --el-text-color-disabled:     var(--color-neutral-600);
+
+  --el-bg-color:                var(--color-neutral-900);
+  --el-bg-color-page:           var(--color-neutral-900);
+  --el-bg-color-overlay:        var(--color-neutral-800);
+
+  --el-fill-color:              var(--color-neutral-800);
+  --el-fill-color-light:        var(--color-neutral-800);
+  --el-fill-color-lighter:      var(--color-neutral-700);
+  --el-fill-color-extra-light:  var(--color-neutral-700);
+  --el-fill-color-blank:        var(--color-neutral-800);
+
+  --el-border-color:            var(--color-neutral-700);
+  --el-border-color-light:      var(--color-neutral-700);
+  --el-border-color-lighter:    var(--color-neutral-800);
+  --el-border-color-extra-light: var(--color-neutral-800);
+
+  --el-disabled-bg-color:       var(--color-neutral-800);
+  --el-disabled-text-color:     var(--color-neutral-600);
+  --el-disabled-border-color:   var(--color-neutral-700);
+}
+```
+
+### 与中创 `_element.scss` 补丁的协作
+
+中创的 `_element.scss` 写的是布局细节(padding / font-size / `!important` 重写),
+这些**不在**我们 skill 的覆盖范围。集成方式有两种:
+
+**方式 A: 简单叠加(推荐)**
+
+把中创的 scss 入口在 override 之后加载,让 scss 里的具体规则自然后加载覆盖:
+
+```ts
+// main.ts
+import 'element-plus/dist/index.css'                                    // 1
+import './ui-theme/tokens/theme.css'                                     // 2
+import './ui-theme/overrides/zhongchuang-theme-override.css'             // 3 (CSS 变量)
+import 'zhongchuang/dist/index.scss'                                     // 4 (scss 布局补丁)
+```
+
+**方式 B: 我们的 override 注入到中创 scss 里(高级)**
+
+如果想保证中创 scss 一定在 override 之后,可以反过来 — 把中创 scss `@use` 进我们
+的 override 文件,这样编译产物里 override 一定在前:
+
+```scss
+/* overrides/zhongchuang-theme-override.scss */
+@use 'zhongchuang/dist/element.scss';   // 中创的 _element.scss 等 4 个
+@use '../tokens/theme.css';             // 我们的 token
+
+:root {
+  // 上面模板里的所有 CSS 变量映射
+  --el-color-primary: var(--color-primary-500);
+  // ...
+}
+```
+
+**注意**: 方式 B 需要 sass 编译,产物仍是 .css。方式 A 不需要 sass 直接 import 即可。
+
+### 验证: 中创组件全过 CSS 变量
+
+中创的 css 变量名空间 = `--el-*` + `--cv-*` 共存。验证时**两个前缀都要查**:
+
+```js
+const elVars = [...document.styleSheets].flatMap(s => {
+  try { return [...s.cssRules].filter(r => r.selectorText === ':root')
+    .flatMap(r => [...r.style].filter(p => p.startsWith('--el-'))) } catch (e) { return [] }
+})
+const cvVars = [...document.styleSheets].flatMap(s => {
+  try { return [...s.cssRules].filter(r => r.selectorText === ':root')
+    .flatMap(r => [...r.style].filter(p => p.startsWith('--cv-'))) } catch (e) { return [] }
+})
+console.log('--el- count:', elVars.length, '— should be 50+')
+console.log('--cv- count:', cvVars.length, '— should be 4+ (中创扩展)')
+
+// 检查主色没被 EP 默认 #409EFF 卡住
+const primaryBtn = document.querySelector('.el-button--primary')
+console.log('primary bg:', primaryBtn ? getComputedStyle(primaryBtn).backgroundColor : 'N/A')
+```
+
+**Pass 标准**:
+- `--el-` 变量 ≥ 50 个
+- `--cv-` 变量 ≥ 4 个(message 4 类)
+- `primary` 按钮 bg ≠ `#409EFF`
+
+### 已知约束
+
+- 中创的 `_element.scss` / `_tooltip.scss` 等**布局补丁**不在我们 skill 覆盖范围,
+  改设计稿后这些补丁**不需要动**,它们只是尺寸/字体的细节调整。
+- 中创若升级到 Element Plus 2.x+,CSS 变量体系会重构,override 模板要重新跑一遍
+  Phase 0 discovery。
+- 中创若改了 `--el-` 前缀为 `--zc-`(假设),则需用 [Working with Forked / Internal
+  Component Libraries](#working-with-forked--internal-component-libraries) 章节的
+  prefix transform 脚本批量重命名。
+
+---
+
 ## How to Choose a Library
 
 If the user is unsure, ask these questions and recommend based on answers:
@@ -778,6 +1055,7 @@ If the user is unsure, ask these questions and recommend based on answers:
 | User says                                                | Recommend                            |
 |----------------------------------------------------------|--------------------------------------|
 | "我项目是 Vue 3" + "公司强制" / "老项目"                  | Element Plus                         |
+| "我项目是 Vue 3" + "公司内部 fork 自 EP 的中创"          | 中创组件库 (Element Plus fork)        |
 | "我项目是 Vue 3" + "想用 TS 优先"                        | Naive UI                             |
 | "我项目是 React" + "国内项目" / "后台"                    | Ant Design                           |
 | "我项目是 React" + "想用 Tailwind"                        | shadcn/ui                            |

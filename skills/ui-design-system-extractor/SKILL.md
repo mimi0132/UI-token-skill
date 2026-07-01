@@ -1,6 +1,6 @@
 ---
 name: "ui-design-system-extractor"
-description: "Extracts visual design tokens (colors, typography, spacing, radius, shadow, border, motion, grid, container, breakpoint, icon-size, focus-ring, font-family, font-weight, easing) from a design source (Figma / image / hand-written tokens), then generates a single CSS override file that maps those tokens onto an existing component library's CSS variables (Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra) to re-skin the existing library without changing any component code. Invoke when user has an existing component library and wants to change only its visual style to match a new design."
+description: "Extracts visual design tokens (colors, typography, spacing, radius, shadow, border, motion, grid, container, breakpoint, icon-size, focus-ring, font-family, font-weight, easing) from a design source (Figma / image / hand-written tokens), then generates a single CSS override file that maps those tokens onto an existing component library's CSS variables (Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra / Vuetify / 中创 fork) to re-skin the existing library without changing any component code. Invoke when user has an existing component library and wants to change only its visual style to match a new design."
 ---
 
 # UI Design System Extractor — Theme Override
@@ -120,7 +120,7 @@ Do NOT invoke when:
 
 问用户 **3 件事** (用 AskUserQuestion 一次问完):
 
-1. **现有组件库**? (Element Plus / Ant Design / shadcn / Naive UI / MUI / Chakra / 其他)
+1. **现有组件库**? (Element Plus / Ant Design / shadcn / Naive UI / MUI / Chakra / Vuetify / 中创 fork / 其他)
 2. **设计源**? (Figma URL / 本地图片 / 手写 tokens 路径)
 3. **覆盖范围**? 
    - 完整换肤 (颜色 + 字体 + 间距 + 圆角 + 阴影)
