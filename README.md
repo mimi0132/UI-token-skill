@@ -13,7 +13,7 @@
 - 🎨 **15 维度提取** — 颜色、字体、字号、字重、行高、间距、圆角、阴影、边框、栅格、容器、断点、图标尺寸、动效曲线、焦点环
 - 🔄 **变量自动推导** — 单锚点 + `color-mix` / `calc` / 几何级数,即使设计稿只给 1 个值也能生成完整 10 档色阶 + 4 档间距 + 4 档圆角
 - 🧩 **8 大组件库** — Element Plus · Ant Design · Ant Design Vue · Naive UI · shadcn · MUI · Chakra · Vuetify
-- 🏢 **公司内部 fork 也支持** — 中创组件库 (Element Plus fork) 等,沿用 EP 前缀并扩展 `--cv-*` 自定义变量
+- 🏢 **公司内部 fork 也支持** — 中创组件库 (Element Plus fork),沿用 EP 的 `--el-*` 前缀 + 扩展 `--cv-*` 变量 + 5 个 scss 布局补丁
 - 🌓 **暗色模式** — 一行 `data-theme` 切换,色阶自动反转
 - 🎯 **交互零侵入** — 组件库原有的点击 / 键盘 / 焦点 / 表单 / 弹窗 / 滚动 / a11y / API / 受控逻辑 一行代码不动
 - 📦 **零依赖** — 不需要 Tailwind / 预处理器 / 构建工具
@@ -69,10 +69,9 @@ import './overrides/element-plus-theme-override.css'  // ⭐ 主题覆盖
 ```js
 // main.js (Vue 3 + 中创组件库)
 import 'element-plus/dist/index.css'                     // 1. 库 CSS
-import './overrides/zhongchuang-theme-override.css'      // 2. ⭐ override
-import '@/styles/zhongchuang/_element.scss'              // 3. 中创 scss 补丁
-                                                       //    (从 skill 的 resources/zhongchuang/
-                                                       //     复制 5 个 scss 文件到项目后导入)
+import './overrides/zhongchuang-theme-override.css'      // 2. ⭐ override (--el-* + --cv-*)
+import '@/styles/zhongchuang/_element.scss'              // 3. 中创 scss 布局补丁
+                                                       //    (从 skill 的 resources/zhongchuang/ 复制)
 ```
 
 ### 2. 切暗色模式
@@ -108,7 +107,7 @@ UI-token-skill/
 │       │   ├── system-prompt.md           # 提取 checklist + 质量门
 │       │   └── figma-extraction.md        # Figma MCP 用法
 │       └── resources/                     # 第三方组件库资源
-│           └── zhongchuang/               # 中创组件库补丁 (随 skill 分发)
+│           └── zhongchuang/               # 中创组件库补丁
 │               ├── README.md              # 中创集成说明
 │               ├── _element.scss          # 入口
 │               ├── _avatar.scss
@@ -129,9 +128,13 @@ UI-token-skill/
 - **公司内部 fork**: 中创组件库 (Element Plus fork) · 其他 `--el-*` / `--ant-*` 前缀的内部库
 - **其它**: fork 自这些库的公司内部组件库也支持,只要走 CSS 变量
 
-> **中创组件库特别说明**: 中创沿用 EP 的 `--el-` 前缀,并扩展了 `--cv-message-*` 等
-> 自定义变量,我们的 override 模板 + 集成方式见
-> [override-patterns.md#中创组件库](skills/ui-design-system-extractor/references/override-patterns.md#中创组件库-vue-3-element-plus-fork)
+> **中创组件库**: 中创是基于 **Element Plus 的内部 fork**。
+> - 沿用 EP 的 `--el-*` CSS 变量前缀(没改)
+> - 扩展了 `--cv-message-success/warning/error/info-border-color` 等 `--cv-*` 自定义变量
+> - 配套 5 个 scss 布局补丁(`_element.scss` / `_avatar.scss` / `_message.scss` /
+>   `_popconfirm.scss` / `_tooltip.scss`),做 EP 没做的 padding / font-size 细节重写
+>
+> 集成方式 = 4 步 import: 库 CSS → 我们 token → 我们的 override (改 `--el-*` + `--cv-*`) → 中创 scss 补丁。
 
 ---
 
@@ -165,12 +168,15 @@ UI-token-skill/
 都支持,override 文件在它们之后加载就能覆盖。Element Plus 默认用 `--el-color-primary`,hover 状态用 `--el-color-primary-light-3` 等,override 文件会一并映射。
 
 **我用的是中创组件库 (Element Plus fork)?**
-直接告诉 Agent "组件库是中创" 即可,会用 `overrides/zhongchuang-theme-override.css` 模板:
-- `--el-*` 全套(中创沿用 EP 前缀)
-- `--cv-message-success/warning/error/info-border-color` 等中创扩展
-- 中创自家的 `_element.scss` 布局补丁**已随 skill 分发**在 `resources/zhongchuang/`,
-  集成时复制到项目 `src/styles/` 即可,**不依赖本地 Downloads**
-- 详见 [`resources/zhongchuang/README.md`](skills/ui-design-system-extractor/resources/zhongchuang/README.md)
+中创 = 公司内部基于 Element Plus fork 的组件库:
+- **沿用 EP** 的 `--el-*` CSS 变量前缀
+- **扩展**了 `--cv-message-*` 等 4 个自定义变量
+- **配套** 5 个 scss 补丁改布局细节(padding / font-size)
+
+告诉 Agent "组件库是中创" 会:
+1. 生成 `overrides/zhongchuang-theme-override.css`(覆盖 `--el-*` + `--cv-*`)
+2. 把 `resources/zhongchuang/` 下的 5 个 scss 补丁复制到项目
+3. README 给 4 行 import 顺序: 库 CSS → token → override → 中创 scss
 
 **我用的是其他公司 fork 库 (前缀 `--my-` / `--ant-xxx-`)?**
 见 [override-patterns.md#working-with-forked](skills/ui-design-system-extractor/references/override-patterns.md#working-with-forked--internal-component-libraries),
