@@ -330,10 +330,15 @@ Rules:
   --color-bg-secondary:  var(--color-neutral-100);
   --color-bg-elevated:   white;
 
-  --color-text-primary:   var(--color-neutral-900);
-  --color-text-secondary: var(--color-neutral-600);
-  --color-text-disabled:  var(--color-neutral-400);
-  --color-text-inverse:   white;
+  /* 5 级文字对比阶梯 (从最强到最弱):
+     primary > regular > secondary > placeholder > disabled
+     用于覆盖 Element Plus 的 --el-text-color-{primary,regular,secondary,placeholder,disabled} */
+  --color-text-primary:     var(--color-neutral-900);
+  --color-text-regular:     var(--color-neutral-800);
+  --color-text-secondary:   var(--color-neutral-600);
+  --color-text-placeholder: var(--color-neutral-500);
+  --color-text-disabled:    var(--color-neutral-400);
+  --color-text-inverse:     white;
 
   --color-border-default: var(--color-neutral-200);
   --color-border-strong:  var(--color-neutral-300);
@@ -349,9 +354,13 @@ Rules:
   --color-bg-secondary:  var(--color-neutral-800);
   --color-bg-elevated:   var(--color-neutral-700);
 
-  --color-text-primary:   var(--color-neutral-50);
-  --color-text-secondary: var(--color-neutral-300);
-  --color-text-disabled:  var(--color-neutral-600);
+  /* 暗色下保持 5 级对比阶梯, 但颜色明度反转:
+     primary(最亮) > regular > secondary > placeholder > disabled(最暗) */
+  --color-text-primary:     var(--color-neutral-50);
+  --color-text-regular:     var(--color-neutral-300);
+  --color-text-secondary:   var(--color-neutral-400);
+  --color-text-placeholder: var(--color-neutral-500);
+  --color-text-disabled:    var(--color-neutral-600);
 
   --color-border-default: var(--color-neutral-700);
   --color-border-strong:  var(--color-neutral-600);

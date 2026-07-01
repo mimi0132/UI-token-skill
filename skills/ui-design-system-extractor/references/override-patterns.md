@@ -967,8 +967,8 @@ cp -r <skill-install-path>/resources/zhongchuang ./src/styles/
   /* ===== Pagination(中创的 el-pagination 有 hover-color 自定义) ===== */
   --el-pagination-hover-color:  var(--color-primary-500);
 
-  /* ===== Input placeholder ===== */
-  --el-input-placeholder-color: var(--color-text-placeholder);
+  /* ===== Input placeholder (中创 _element.scss 显式将其重写为 --el-text-color-secondary) ===== */
+  --el-input-placeholder-color: var(--color-text-secondary);
 
   /* ===== Message 文字色 ===== */
   --el-message-text-color:      var(--color-text-primary);
@@ -982,15 +982,15 @@ cp -r <skill-install-path>/resources/zhongchuang ./src/styles/
 
 [data-theme="dark"] {
   /* 暗色模式:中创跟随 EP 默认的暗色映射,我们把基础色和文字色都反转 */
-  --el-text-color-primary:      var(--color-neutral-50);
-  --el-text-color-regular:      var(--color-neutral-300);
-  --el-text-color-secondary:    var(--color-neutral-400);
-  --el-text-color-placeholder:  var(--color-neutral-500);
-  --el-text-color-disabled:     var(--color-neutral-600);
+  --el-text-color-primary:      var(--color-text-primary);
+  --el-text-color-regular:      var(--color-text-regular);
+  --el-text-color-secondary:    var(--color-text-secondary);
+  --el-text-color-placeholder:  var(--color-text-placeholder);
+  --el-text-color-disabled:     var(--color-text-disabled);
 
-  --el-bg-color:                var(--color-neutral-900);
-  --el-bg-color-page:           var(--color-neutral-900);
-  --el-bg-color-overlay:        var(--color-neutral-800);
+  --el-bg-color:                var(--color-bg-primary);
+  --el-bg-color-page:           var(--color-bg-primary);
+  --el-bg-color-overlay:        var(--color-bg-elevated);
 
   --el-fill-color:              var(--color-neutral-800);
   --el-fill-color-light:        var(--color-neutral-800);
