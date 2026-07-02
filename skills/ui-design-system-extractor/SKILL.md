@@ -52,7 +52,7 @@ Read https://raw.githubusercontent.com/mimi0132/UI-token-skill/main/skills/ui-de
 | 输出 1 个 override CSS 文件 | 改点击 / 键盘 / 焦点 / 表单 / 弹窗等交互行为 |
 | 输出 7 个 token 源文件供独立调参 | 假设用户没有基础组件库 |
 | 输出预览页 (用户先看效果) | 强制选某个组件库 |
-| 1 行 import 集成 + 1 行暗色模式切换 | 硬编码 hex / 像素值填 40+ 个变量(用推导代替) |
+| 1 行 import 集成 + 1 行 token 调参 | 硬编码 hex / 像素值填 40+ 个变量(用推导代替) |
 
 **关键判断**: 用户必须已经有一个正在使用的组件库,且该组件库必须是本 skill 支持的 3 个之一(Element Plus 2.4 / Ant Design v5 / 中创 fork)。如果用户说「我项目里用的 Element Plus」 / 「公司用的是中创」 / 「React 项目用 Ant Design」,这个 skill 适用。如果用户说「我用的是 shadcn / Naive UI / MUI / Chakra / Vuetify」,**不适用**——告知用户并建议换库或扩展 skill。如果用户从零开始,这个 skill 不适用(改用通用 UI 组件生成 skill)。
 
@@ -109,7 +109,7 @@ Do NOT invoke when:
 4. **必须生成预览页** (`preview/comprehensive-preview.html` 唯一 1 个),用 iframe 或 inline HTML 展示现有组件套上
    override 后的样子。用户必须能先看效果再决定要不要集成。**禁止**生成 dashboard / user-list / preview 等其他文件。
 5. **集成说明必须是一行 import**,不能多于 3 步。
-6. **暗色模式必须支持**: 输出 `[data-theme="dark"]` 变体,且告诉用户怎么切换。
+6. **保留原生库的所有行为**(hover / focus / disabled / 动效),只改颜色和尺寸。
 7. **不能生成任何新组件文件** (Button.vue / Button.tsx / 等等) —— 永远不写。
 
 ---
@@ -342,18 +342,16 @@ details are the agent's job.
   - **Categories 1-8** **50+ 组件必全覆盖**,完整清单见
     [references/preview-comprehensive.md](references/preview-comprehensive.md)
 - **少一个 = 不算交付**。组件库覆盖是 preview 的核心目的,3-5 个远远不够(组件库一般 50+ 个,5 个覆盖率 < 10%)。
-- 暗色模式预览可以放 toggle 按钮,默认 light。
+- 暗色模式预览**默认 light**,不要求加 toggle 按钮。
 
 ### Step 4 — Document (README.md)
 
 README 必须包含:
 
 1. **集成步骤** (3 行 import, 不多于 3 步)
-2. **怎么切换暗色模式** (`document.documentElement.setAttribute('data-theme', 'dark')`)
-3. **怎么调整某个 token** (改 `tokens/colors.css` 里的一行,自动应用到所有组件)
-4. **常见问题**:
+2. **怎么调整某个 token** (改 `tokens/colors.css` 里的一行,自动应用到所有组件)
+3. **常见问题**:
    - "为什么我改了一个 token 没生效?" → 检查 import 顺序
-   - "暗色模式不切换?" → 检查 `[data-theme]` 选择器
    - "某个组件没变化?" → 该组件可能用了硬编码颜色,不在 CSS 变量体系
 
 ### Step 5 — Verify

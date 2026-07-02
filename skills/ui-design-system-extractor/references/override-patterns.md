@@ -492,11 +492,15 @@ cp -r <skill-install-path>/resources/zhongchuang ./src/styles/
   /* ===== Message 文字色 ===== */
   --el-message-text-color:      var(--color-text-primary);
 
-  /* ===== 中创扩展的 --cv- 自定义变量(从 _message.scss 反推) ===== */
+  /* ===== 中创扩展的 --cv- 自定义变量(从 _message.scss / _element.scss 反推) ===== */
   --cv-message-success-border-color: var(--color-success-500);
   --cv-message-warning-border-color: var(--color-warning-500);
   --cv-message-error-border-color:   var(--color-danger-500);
   --cv-message-info-border-color:    var(--color-info-500);
+
+  /* el-link--danger 状态(中创在 _element.scss 中重写为 --cv-* 自定义变量) */
+  --cv-link-danger-hover:           var(--color-danger-light-3); /* 700 → hover 加深 */
+  --cv-link-danger-disabled:        var(--color-danger-light-7); /* 禁用变浅 */
 }
 
 [data-theme="dark"] {
