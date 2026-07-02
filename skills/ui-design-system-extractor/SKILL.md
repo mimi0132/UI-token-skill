@@ -136,16 +136,10 @@ Do NOT invoke when:
 node -e "
 const p = require('./package.json');
 const all = { ...p.dependencies, ...p.devDependencies };
-const out = {
+console.log(JSON.stringify({
   'element-plus': all['element-plus'],
   'antd':         all['antd'],
-  'naive-ui':     all['naive-ui'],
-  '@shadcn/ui':   all['@shadcn/ui'],
-  'tailwindcss':  all['tailwindcss'],
-  'vuetify':      all['vuetify'],
-  '@mui/material': all['@mui/material'],
-};
-console.log(JSON.stringify(out, null, 2));
+}, null, 2));
 "
 # Then check for --cv- markers to detect 中创 fork:
 grep -rh -- '--cv-' node_modules/element-plus/lib/theme-chalk/*.scss 2>/dev/null | head -3
@@ -186,7 +180,7 @@ details are the agent's job.
 | # | File | Contains |
 |---|------|----------|
 | 1 | `tokens/theme.css` | Entry, `@import` other 6, define component-layer tokens (`--button-bg` etc.) |
-| 2 | `tokens/colors.css` | Per-role color scale (EP: 7 stops, AntD: 10 stops), semantic text/bg/border, dark mode mapping |
+| 2 | `tokens/colors.css` | Per-role color scale (EP/中创: 7 stops, AntD: 10 stops), semantic text/bg/border |
 | 3 | `tokens/typography.css` | Font family, size (xs-4xl), weight, line height |
 | 4 | `tokens/spacing.css` | 4px base (0-24) |
 | 5 | `tokens/radius.css` | radius (none/sm/md/lg/xl/2xl/full) |
@@ -253,13 +247,6 @@ details are the agent's job.
   --<lib>-text-color-secondary: var(--color-text-secondary);
   --<lib>-text-color-placeholder: var(--color-text-disabled);
   --<lib>-border-color: var(--color-border-default);
-}
-
-[data-theme="dark"] {
-  /* 暗色模式映射 - 见 references/override-patterns.md */
-  --<lib>-bg-color: var(--color-bg-primary);
-  --<lib>-text-color-primary: var(--color-text-primary);
-  /* ... */
 }
 ```
 
@@ -342,7 +329,6 @@ details are the agent's job.
   - **Categories 1-8** **50+ 组件必全覆盖**,完整清单见
     [references/preview-comprehensive.md](references/preview-comprehensive.md)
 - **少一个 = 不算交付**。组件库覆盖是 preview 的核心目的,3-5 个远远不够(组件库一般 50+ 个,5 个覆盖率 < 10%)。
-- 暗色模式预览**默认 light**,不要求加 toggle 按钮。
 
 ### Step 4 — Document (README.md)
 
@@ -462,7 +448,6 @@ Action: **不要用这个 skill**。告诉用户这个 skill 只做"换肤",从�
 - ❌ 不跳过预览页
 - ❌ 不让集成步骤超过 3 行 import
 - ❌ 不做"半套" (例如只覆盖 primary 颜色不覆盖 neutral)
-- ❌ 不假设有暗色模式 —— 显式询问用户是否需要
 
 ---
 

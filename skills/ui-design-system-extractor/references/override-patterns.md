@@ -42,55 +42,55 @@ import './ui-theme/overrides/element-plus-theme-override.css'
 @import '../tokens/theme.css';
 
 :root {
-  /* ===== Primary palette (ALL stops required) ===== */
-  --el-color-primary:           var(--color-primary-500);
-  --el-color-primary-light-3:   var(--color-primary-300);
-  --el-color-primary-light-5:   var(--color-primary-100);
-  --el-color-primary-light-7:   var(--color-primary-50);
-  --el-color-primary-light-8:   var(--color-primary-50);
-  --el-color-primary-light-9:   var(--color-primary-50);
-  --el-color-primary-dark-2:    var(--color-primary-700);
+  /* ===== Primary palette (7-stop scale) ===== */
+  --el-color-primary:           var(--color-primary);
+  --el-color-primary-light-3:   var(--color-primary-light-3);
+  --el-color-primary-light-5:   var(--color-primary-light-5);
+  --el-color-primary-light-7:   var(--color-primary-light-7);
+  --el-color-primary-light-8:   var(--color-primary-light-8);
+  --el-color-primary-light-9:   var(--color-primary-light-9);
+  --el-color-primary-dark-2:    var(--color-primary-dark-2);
 
   /* ===== Semantic palette ===== */
-  --el-color-success:           var(--color-success-500);
-  --el-color-success-light-3:   var(--color-success-300);
-  --el-color-success-light-5:   var(--color-success-100);
-  --el-color-success-light-7:   var(--color-success-50);
-  --el-color-success-light-8:   var(--color-success-50);
-  --el-color-success-light-9:   var(--color-success-50);
-  --el-color-success-dark-2:    var(--color-success-700);
+  --el-color-success:           var(--color-success);
+  --el-color-success-light-3:   var(--color-success-light-3);
+  --el-color-success-light-5:   var(--color-success-light-5);
+  --el-color-success-light-7:   var(--color-success-light-7);
+  --el-color-success-light-8:   var(--color-success-light-8);
+  --el-color-success-light-9:   var(--color-success-light-9);
+  --el-color-success-dark-2:    var(--color-success-dark-2);
 
-  --el-color-warning:           var(--color-warning-500);
-  --el-color-warning-light-3:   var(--color-warning-300);
-  --el-color-warning-light-5:   var(--color-warning-100);
-  --el-color-warning-light-7:   var(--color-warning-50);
-  --el-color-warning-light-8:   var(--color-warning-50);
-  --el-color-warning-light-9:   var(--color-warning-50);
-  --el-color-warning-dark-2:    var(--color-warning-700);
+  --el-color-warning:           var(--color-warning);
+  --el-color-warning-light-3:   var(--color-warning-light-3);
+  --el-color-warning-light-5:   var(--color-warning-light-5);
+  --el-color-warning-light-7:   var(--color-warning-light-7);
+  --el-color-warning-light-8:   var(--color-warning-light-8);
+  --el-color-warning-light-9:   var(--color-warning-light-9);
+  --el-color-warning-dark-2:    var(--color-warning-dark-2);
 
-  --el-color-danger:            var(--color-danger-500);
-  --el-color-danger-light-3:    var(--color-danger-300);
-  --el-color-danger-light-5:    var(--color-danger-100);
-  --el-color-danger-light-7:    var(--color-danger-50);
-  --el-color-danger-light-8:    var(--color-danger-50);
-  --el-color-danger-light-9:    var(--color-danger-50);
-  --el-color-danger-dark-2:     var(--color-danger-700);
+  --el-color-danger:            var(--color-danger);
+  --el-color-danger-light-3:    var(--color-danger-light-3);
+  --el-color-danger-light-5:    var(--color-danger-light-5);
+  --el-color-danger-light-7:    var(--color-danger-light-7);
+  --el-color-danger-light-8:    var(--color-danger-light-8);
+  --el-color-danger-light-9:    var(--color-danger-light-9);
+  --el-color-danger-dark-2:     var(--color-danger-dark-2);
 
-  --el-color-error:             var(--color-danger-500);
-  --el-color-error-light-3:     var(--color-danger-300);
-  --el-color-error-light-5:     var(--color-danger-100);
-  --el-color-error-light-7:     var(--color-danger-50);
-  --el-color-error-light-8:     var(--color-danger-50);
-  --el-color-error-light-9:     var(--color-danger-50);
-  --el-color-error-dark-2:      var(--color-danger-700);
+  --el-color-error:             var(--color-danger);
+  --el-color-error-light-3:     var(--color-danger-light-3);
+  --el-color-error-light-5:     var(--color-danger-light-5);
+  --el-color-error-light-7:     var(--color-danger-light-7);
+  --el-color-error-light-8:     var(--color-danger-light-8);
+  --el-color-error-light-9:     var(--color-danger-light-9);
+  --el-color-error-dark-2:      var(--color-danger-dark-2);
 
-  --el-color-info:              var(--color-info-500);
-  --el-color-info-light-3:      var(--color-info-300);
-  --el-color-info-light-5:      var(--color-info-100);
-  --el-color-info-light-7:      var(--color-info-50);
-  --el-color-info-light-8:      var(--color-info-50);
-  --el-color-info-light-9:      var(--color-info-50);
-  --el-color-info-dark-2:       var(--color-info-700);
+  --el-color-info:              var(--color-info);
+  --el-color-info-light-3:      var(--color-info-light-3);
+  --el-color-info-light-5:      var(--color-info-light-5);
+  --el-color-info-light-7:      var(--color-info-light-7);
+  --el-color-info-light-8:      var(--color-info-light-8);
+  --el-color-info-light-9:      var(--color-info-light-9);
+  --el-color-info-dark-2:       var(--color-info-dark-2);
 
   /* ===== Border radius ===== */
   --el-border-radius-base:      var(--radius-md);
@@ -105,7 +105,7 @@ import './ui-theme/overrides/element-plus-theme-override.css'
   --el-border-color-extra-light:      var(--color-border-subtle);
   --el-border-color-dark:             var(--color-border-strong);
   --el-border-color-darker:           var(--color-border-strong);
-  --el-border-color-hover:            var(--color-primary-500);
+  --el-border-color-hover:            var(--color-primary);
 
   /* ===== Fill (background) ===== */
   --el-fill-color:               var(--color-bg-elevated);
@@ -142,18 +142,6 @@ import './ui-theme/overrides/element-plus-theme-override.css'
   --el-disabled-bg-color:        var(--color-bg-secondary);
   --el-disabled-text-color:      var(--color-text-disabled);
   --el-disabled-border-color:    var(--color-border-subtle);
-}
-
-[data-theme="dark"] {
-  --el-bg-color:                 var(--color-bg-primary);
-  --el-bg-color-page:            var(--color-bg-primary);
-  --el-bg-color-overlay:         var(--color-bg-elevated);
-  --el-text-color-primary:       var(--color-text-primary);
-  --el-text-color-regular:       var(--color-text-regular);
-  --el-text-color-secondary:     var(--color-text-secondary);
-  --el-fill-color-blank:         var(--color-bg-elevated);
-  --el-border-color:             var(--color-border-default);
-  --el-disabled-bg-color:        var(--color-bg-elevated);
 }
 ```
 
@@ -271,15 +259,6 @@ import './ui-theme/overrides/antd-theme-override.css'
   --ant-control-height-sm:       24px;
   --ant-control-height-lg:       40px;
 }
-
-[data-theme="dark"] {
-  --ant-color-bg-base:           var(--color-bg-primary);
-  --ant-color-bg-container:      var(--color-bg-elevated);
-  --ant-color-bg-layout:         var(--color-bg-primary);
-  --ant-color-text:              var(--color-text-primary);
-  --ant-color-text-secondary:    var(--color-text-secondary);
-  --ant-color-border:            var(--color-border-default);
-}
 ```
 
 > **Note**: Ant Design 5 also accepts a runtime `theme` prop on `ConfigProvider` for
@@ -378,54 +357,54 @@ cp -r <skill-install-path>/resources/zhongchuang ./src/styles/
 @import '../tokens/theme.css';
 
 :root {
-  /* ===== Element Plus 基础色(中创沿用 --el- 前缀) ===== */
-  --el-color-primary:           var(--color-primary-500);
-  --el-color-primary-light-3:   var(--color-primary-300);
-  --el-color-primary-light-5:   var(--color-primary-100);
-  --el-color-primary-light-7:   var(--color-primary-50);
-  --el-color-primary-light-8:   var(--color-primary-50);
-  --el-color-primary-light-9:   var(--color-primary-50);
-  --el-color-primary-dark-2:    var(--color-primary-700);
+  /* ===== Element Plus 基础色(中创沿用 --el- 前缀,7 档) ===== */
+  --el-color-primary:           var(--color-primary);
+  --el-color-primary-light-3:   var(--color-primary-light-3);
+  --el-color-primary-light-5:   var(--color-primary-light-5);
+  --el-color-primary-light-7:   var(--color-primary-light-7);
+  --el-color-primary-light-8:   var(--color-primary-light-8);
+  --el-color-primary-light-9:   var(--color-primary-light-9);
+  --el-color-primary-dark-2:    var(--color-primary-dark-2);
 
-  --el-color-success:           var(--color-success-500);
-  --el-color-success-light-3:   var(--color-success-300);
-  --el-color-success-light-5:   var(--color-success-100);
-  --el-color-success-light-7:   var(--color-success-50);
-  --el-color-success-light-8:   var(--color-success-50);
-  --el-color-success-light-9:   var(--color-success-50);
-  --el-color-success-dark-2:    var(--color-success-700);
+  --el-color-success:           var(--color-success);
+  --el-color-success-light-3:   var(--color-success-light-3);
+  --el-color-success-light-5:   var(--color-success-light-5);
+  --el-color-success-light-7:   var(--color-success-light-7);
+  --el-color-success-light-8:   var(--color-success-light-8);
+  --el-color-success-light-9:   var(--color-success-light-9);
+  --el-color-success-dark-2:    var(--color-success-dark-2);
 
-  --el-color-warning:           var(--color-warning-500);
-  --el-color-warning-light-3:   var(--color-warning-300);
-  --el-color-warning-light-5:   var(--color-warning-100);
-  --el-color-warning-light-7:   var(--color-warning-50);
-  --el-color-warning-light-8:   var(--color-warning-50);
-  --el-color-warning-light-9:   var(--color-warning-50);
-  --el-color-warning-dark-2:    var(--color-warning-700);
+  --el-color-warning:           var(--color-warning);
+  --el-color-warning-light-3:   var(--color-warning-light-3);
+  --el-color-warning-light-5:   var(--color-warning-light-5);
+  --el-color-warning-light-7:   var(--color-warning-light-7);
+  --el-color-warning-light-8:   var(--color-warning-light-8);
+  --el-color-warning-light-9:   var(--color-warning-light-9);
+  --el-color-warning-dark-2:    var(--color-warning-dark-2);
 
-  --el-color-danger:            var(--color-danger-500);
-  --el-color-danger-light-3:    var(--color-danger-300);
-  --el-color-danger-light-5:    var(--color-danger-100);
-  --el-color-danger-light-7:    var(--color-danger-50);
-  --el-color-danger-light-8:    var(--color-danger-50);
-  --el-color-danger-light-9:    var(--color-danger-50);
-  --el-color-danger-dark-2:     var(--color-danger-700);
+  --el-color-danger:            var(--color-danger);
+  --el-color-danger-light-3:    var(--color-danger-light-3);
+  --el-color-danger-light-5:    var(--color-danger-light-5);
+  --el-color-danger-light-7:    var(--color-danger-light-7);
+  --el-color-danger-light-8:    var(--color-danger-light-8);
+  --el-color-danger-light-9:    var(--color-danger-light-9);
+  --el-color-danger-dark-2:     var(--color-danger-dark-2);
 
-  --el-color-error:             var(--color-danger-500);
-  --el-color-error-light-3:     var(--color-danger-300);
-  --el-color-error-light-5:     var(--color-danger-100);
-  --el-color-error-light-7:     var(--color-danger-50);
-  --el-color-error-light-8:     var(--color-danger-50);
-  --el-color-error-light-9:     var(--color-danger-50);
-  --el-color-error-dark-2:      var(--color-danger-700);
+  --el-color-error:             var(--color-danger);
+  --el-color-error-light-3:     var(--color-danger-light-3);
+  --el-color-error-light-5:     var(--color-danger-light-5);
+  --el-color-error-light-7:     var(--color-danger-light-7);
+  --el-color-error-light-8:     var(--color-danger-light-8);
+  --el-color-error-light-9:     var(--color-danger-light-9);
+  --el-color-error-dark-2:      var(--color-danger-dark-2);
 
-  --el-color-info:              var(--color-info-500);
-  --el-color-info-light-3:      var(--color-info-300);
-  --el-color-info-light-5:      var(--color-info-100);
-  --el-color-info-light-7:      var(--color-info-50);
-  --el-color-info-light-8:      var(--color-info-50);
-  --el-color-info-light-9:      var(--color-info-50);
-  --el-color-info-dark-2:       var(--color-info-700);
+  --el-color-info:              var(--color-info);
+  --el-color-info-light-3:      var(--color-info-light-3);
+  --el-color-info-light-5:      var(--color-info-light-5);
+  --el-color-info-light-7:      var(--color-info-light-7);
+  --el-color-info-light-8:      var(--color-info-light-8);
+  --el-color-info-light-9:      var(--color-info-light-9);
+  --el-color-info-dark-2:       var(--color-info-dark-2);
 
   --el-color-white:             #ffffff;
   --el-color-black:             #000000;
@@ -484,7 +463,7 @@ cp -r <skill-install-path>/resources/zhongchuang ./src/styles/
   --el-font-size-extra-large:   var(--font-size-xl);
 
   /* ===== Pagination(中创的 el-pagination 有 hover-color 自定义) ===== */
-  --el-pagination-hover-color:  var(--color-primary-500);
+  --el-pagination-hover-color:  var(--color-primary);
 
   /* ===== Input placeholder (中创 _element.scss 显式将其重写为 --el-text-color-secondary) ===== */
   --el-input-placeholder-color: var(--color-text-secondary);
@@ -493,42 +472,14 @@ cp -r <skill-install-path>/resources/zhongchuang ./src/styles/
   --el-message-text-color:      var(--color-text-primary);
 
   /* ===== 中创扩展的 --cv- 自定义变量(从 _message.scss / _element.scss 反推) ===== */
-  --cv-message-success-border-color: var(--color-success-500);
-  --cv-message-warning-border-color: var(--color-warning-500);
-  --cv-message-error-border-color:   var(--color-danger-500);
-  --cv-message-info-border-color:    var(--color-info-500);
+  --cv-message-success-border-color: var(--color-success);
+  --cv-message-warning-border-color: var(--color-warning);
+  --cv-message-error-border-color:   var(--color-danger);
+  --cv-message-info-border-color:    var(--color-info);
 
   /* el-link--danger 状态(中创在 _element.scss 中重写为 --cv-* 自定义变量) */
-  --cv-link-danger-hover:           var(--color-danger-light-3); /* 700 → hover 加深 */
+  --cv-link-danger-hover:           var(--color-danger-light-3); /* hover 加深 */
   --cv-link-danger-disabled:        var(--color-danger-light-7); /* 禁用变浅 */
-}
-
-[data-theme="dark"] {
-  /* 暗色模式:中创跟随 EP 默认的暗色映射,我们把基础色和文字色都反转 */
-  --el-text-color-primary:      var(--color-text-primary);
-  --el-text-color-regular:      var(--color-text-regular);
-  --el-text-color-secondary:    var(--color-text-secondary);
-  --el-text-color-placeholder:  var(--color-text-placeholder);
-  --el-text-color-disabled:     var(--color-text-disabled);
-
-  --el-bg-color:                var(--color-bg-primary);
-  --el-bg-color-page:           var(--color-bg-primary);
-  --el-bg-color-overlay:        var(--color-bg-elevated);
-
-  --el-fill-color:              var(--color-neutral-800);
-  --el-fill-color-light:        var(--color-neutral-800);
-  --el-fill-color-lighter:      var(--color-neutral-700);
-  --el-fill-color-extra-light:  var(--color-neutral-700);
-  --el-fill-color-blank:        var(--color-neutral-800);
-
-  --el-border-color:            var(--color-neutral-700);
-  --el-border-color-light:      var(--color-neutral-700);
-  --el-border-color-lighter:    var(--color-neutral-800);
-  --el-border-color-extra-light: var(--color-neutral-800);
-
-  --el-disabled-bg-color:       var(--color-neutral-800);
-  --el-disabled-text-color:     var(--color-neutral-600);
-  --el-disabled-border-color:   var(--color-neutral-700);
 }
 ```
 
@@ -561,7 +512,7 @@ import '@/styles/zhongchuang/_element.scss'                              // 4 (s
 
 :root {
   // 上面模板里的所有 CSS 变量映射
-  --el-color-primary: var(--color-primary-500);
+  --el-color-primary: var(--color-primary);
   // ...
 }
 ```
@@ -730,12 +681,12 @@ still override.
 ```css
 /* ✅ good — low specificity */
 :where(.el-button).is-primary {
-  background: var(--color-primary-500);
+  background: var(--color-primary);
 }
 
 /* ❌ avoid — high specificity prevents user override */
 body .el-button.el-button--primary {
-  background: var(--color-primary-500);
+  background: var(--color-primary);
 }
 ```
 

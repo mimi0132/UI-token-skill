@@ -105,7 +105,8 @@ Map Figma properties to token file entries:
 
 | Figma Property                | Token File     | Variable Name                       |
 |-------------------------------|----------------|-------------------------------------|
-| `fills[0].color`              | `colors.css`   | `--color-primary-500`               |
+| `fills[0].color`              | `colors.css`   | `--color-primary` (EP / 中创)       |
+| `fills[0].color`              | `colors.css`   | `--color-primary-6` (AntD 10-stop)  |
 | `cornerRadius`                | `radius.css`   | `--radius-md` (6)                   |
 | `paddingLeft/Right`           | `spacing.css`  | `--space-4` (16)                    |
 | `paddingTop/Bottom`           | `spacing.css`  | `--space-2` (8)                     |
@@ -115,27 +116,43 @@ Map Figma properties to token file entries:
 | `fontName.family`             | `typography.css` | `--font-family-body`              |
 | `effects[0]` (DROP_SHADOW)    | `theme.css`    | `--shadow-sm`                       |
 
-### 6. Derive color scales from a single primary
+### 6. Derive color scales from the single primary anchor
 
-If Figma only gives you the 500/600 stops, derive the rest of the scale using
-`color-mix(in srgb, ...)`:
+Use `color-mix(in srgb, ...)` to derive the rest of the lib's scale from the anchor:
+
+**EP / 中创 (7 stops)** — anchor is single color, no numbering:
 
 ```css
 :root {
-  --color-primary-500: #6366F1;
-  --color-primary-50:  color-mix(in srgb, var(--color-primary-500) 8%,  white);
-  --color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
-  --color-primary-200: color-mix(in srgb, var(--color-primary-500) 28%, white);
-  --color-primary-300: color-mix(in srgb, var(--color-primary-500) 44%, white);
-  --color-primary-400: color-mix(in srgb, var(--color-primary-500) 68%, white);
-  --color-primary-600: color-mix(in srgb, var(--color-primary-500) 88%, black);
-  --color-primary-700: color-mix(in srgb, var(--color-primary-500) 76%, black);
-  --color-primary-800: color-mix(in srgb, var(--color-primary-500) 60%, black);
-  --color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
+  --color-primary: #6366F1;
+  --color-primary-light-3: color-mix(in srgb, var(--color-primary) 88%, black);
+  --color-primary-light-5: color-mix(in srgb, var(--color-primary) 40%, white);
+  --color-primary-light-7: color-mix(in srgb, var(--color-primary) 24%, white);
+  --color-primary-light-8: color-mix(in srgb, var(--color-primary) 12%, white);
+  --color-primary-light-9: color-mix(in srgb, var(--color-primary)  6%, white);
+  --color-primary-dark-2:  color-mix(in srgb, var(--color-primary) 80%, black);
 }
 ```
 
-Same approach for the dark mode: invert the white/black arguments.
+**Ant Design v5 (10 stops)** — anchor is `--color-primary-6`, the rest is numbered:
+
+```css
+:root {
+  --color-primary-6: #6366F1;  /* anchor (was -500 in v4) */
+  --color-primary-1:  color-mix(in srgb, var(--color-primary-6)  8%, white);
+  --color-primary-2:  color-mix(in srgb, var(--color-primary-6) 16%, white);
+  --color-primary-3:  color-mix(in srgb, var(--color-primary-6) 28%, white);
+  --color-primary-4:  color-mix(in srgb, var(--color-primary-6) 44%, white);
+  --color-primary-5:  color-mix(in srgb, var(--color-primary-6) 68%, white);
+  --color-primary-7:  color-mix(in srgb, var(--color-primary-6) 88%, black);
+  --color-primary-8:  color-mix(in srgb, var(--color-primary-6) 76%, black);
+  --color-primary-9:  color-mix(in srgb, var(--color-primary-6) 60%, black);
+  --color-primary-10: color-mix(in srgb, var(--color-primary-6) 44%, black);
+}
+```
+
+> **Do not** emit a 10-stop scale for EP / 中创, and do not emit a 7-stop scale
+> for AntD. Match the lib's own structure (see `references/token-spec.md`).
 
 ---
 

@@ -233,33 +233,6 @@ variants, box-shadow variants, and component-specific overrides, see `override-p
   --color-mask:              rgba(255, 255, 255, 0.9);
   --color-mask-extra-light:  rgba(255, 255, 255, 0.3);
 }
-
-/* theme.css (dark) — html.dark */
-html.dark {
-  /* 全套反转: 设计稿给暗色 base, color-mix 推导 light-3/5/7/8/9 + dark-2 */
-  --color-primary-base:      #409EFF;   /* 与亮色 light-3 接近 */
-  --color-primary-light-3:   color-mix(in srgb, var(--color-primary-base) 75%, black);
-  /* ... */
-  --color-bg-page:           #0A0A0A;
-  --color-bg-surface:        #141414;
-  --color-bg-overlay:        #1D1E1F;
-  --color-text-primary:      #E5EAF3;
-  --color-text-regular:      #CFD3DC;
-  --color-text-secondary:    #A3A6AD;
-  --color-text-placeholder:  #8D9095;
-  --color-text-disabled:     #6C6E72;
-  --color-border-default:    #4C4D4F;
-  --color-border-light:      #414243;
-  --color-border-lighter:    #363637;
-  --color-border-extra-light:#2B2B2C;
-  --color-border-dark:       #58585B;
-  --color-border-hover:      #636466;
-  --color-fill-default:      #303030;
-  --color-fill-light:        #262727;
-  --color-disabled-bg:       var(--color-fill-light);
-  --color-mask:              rgba(0, 0, 0, 0.8);
-  --color-mask-extra-light:  rgba(0, 0, 0, 0.3);
-}
 ```
 
 **Override file** (`overrides/element-plus-theme-override.css`):
@@ -300,11 +273,6 @@ html.dark {
   --el-disabled-bg-color:       var(--color-disabled-bg);
   --el-mask-color:              var(--color-mask);
   --el-mask-color-extra-light:  var(--color-mask-extra-light);
-}
-
-html.dark {
-  --el-color-primary:           var(--color-primary-base);
-  /* ... 与 :root 同样路由 (变量在 html.dark 下重新定义) */
 }
 ```
 
@@ -442,21 +410,6 @@ schema, see `node_modules/antd/lib/theme/interface/seeds.ts`.
   --color-fill-tertiary:         rgba(0, 0, 0, 0.04);
   --color-fill-quaternary:       rgba(0, 0, 0, 0.02);
 }
-
-/* theme.css (dark) */
-[data-theme="dark"] {
-  --color-text-base:             #FFFFFF;
-  --color-text:                  rgba(255, 255, 255, 0.85);
-  --color-text-secondary:        rgba(255, 255, 255, 0.65);
-  --color-text-tertiary:         rgba(255, 255, 255, 0.45);
-  --color-bg-base:               #141414;
-  --color-bg-container:          #1F1F1F;
-  --color-bg-layout:             #000000;
-  --color-border:                #424242;
-  --color-border-secondary:      #303030;
-  --color-mask:                  rgba(0, 0, 0, 0.65);
-  /* 主色不变, 但 -1..-5 变深, -7..-10 变浅 — 由 color-mix 推 */
-}
 ```
 
 **Override via ConfigProvider** (AntD v5 idiomatic way):
@@ -478,7 +431,7 @@ import { useToken } from './ui-theme/tokens/theme.css';  /* our CSS tokens */
     borderRadius:   6,            /* design value */
     fontSize:       14,            /* design value */
   },
-  algorithm: theme.defaultAlgorithm,  /* or theme.darkAlgorithm */
+  algorithm: theme.defaultAlgorithm,
 }}>
   <App />
 </ConfigProvider>
@@ -576,13 +529,6 @@ re-maps them to the same `--color-*` tokens.
   --cv-popconfirm-bg-color:   var(--el-popconfirm-bg-color);
   --cv-tooltip-text-color:    var(--el-text-color-primary);
 }
-
-html.dark {
-  --cv-avatar-text-color:     var(--color-text-regular);
-  --cv-message-bg-color:      var(--el-message-bg-color);
-  --cv-popconfirm-bg-color:   var(--el-popconfirm-bg-color);
-  --cv-tooltip-text-color:    var(--el-text-color-primary);
-}
 ```
 
 > **Important**: The 中创 SCSS patches (`resources/zhongchuang/_*.scss`) are the
@@ -615,17 +561,6 @@ and derive the rest.
   jump looks too big, the percentage is too large.
 - The 500 stop (base) is the **brand-defining** color. It should be the most saturated,
   most distinctive stop in the scale. Don't make 500 too close to neutral.
-
-### 4.2 Dark mode inversion
-
-For **dark mode**, the scale **flips**: dark-2 becomes the new "base-ish" stop, and the
-light-3/5/7/8/9 become darker. AntD's `darkAlgorithm` does this for you. Element Plus
-and 中创 require manual inversion (the dump in `node_modules/element-plus/theme-chalk/dark/css-vars.css`
-shows the canonical dark values for 2.4.x).
-
-**Recommended approach**: Don't try to derive dark mode from light mode with a formula.
-**Read the EP dark CSS dump** and use those values as the dark mode anchors. This guarantees
-the result matches EP's tested dark theme.
 
 ---
 
@@ -768,8 +703,6 @@ EP override: `--el-transition-duration` / `--el-transition-duration-fast` /
 @import './radius.css';
 @import './border.css';
 @import './motion.css';
-
-html.dark { @import './colors.css'; /* dark mode overrides */ }
 ```
 
 ---
@@ -789,11 +722,7 @@ A generated token set passes the validation check only if:
 3. **The lib name in the override file matches the lib actually installed** in the project.
    Run `node -p "require('./package.json').dependencies?.['element-plus']"` to confirm.
 
-4. **Dark mode is defined for every variable** that has a light mode definition. EP's
-   dark mode is structurally symmetric to light mode — every `--el-color-primary` has a
-   dark counterpart, no extra "dark-only" variables.
-
-5. **The 3-step workflow (§ 0.4) was followed**: auto-detect → dump → pick template.
+4. **The 3-step workflow (§ 0.4) was followed**: auto-detect → dump → pick template.
    Do not skip the dump step. Do not invent variables from memory.
 
 See `references/system-prompt.md` for the audit table that the agent must fill out

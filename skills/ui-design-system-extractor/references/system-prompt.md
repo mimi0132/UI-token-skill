@@ -108,7 +108,7 @@ const allVars = {}
 for (const sheet of document.styleSheets) {
   try {
     for (const rule of sheet.cssRules) {
-      if (rule.style && (rule.selectorText === ':root' || rule.selectorText === ':host' || rule.selectorText === 'html.dark')) {
+      if (rule.style && (rule.selectorText === ':root' || rule.selectorText === ':host')) {
         for (const prop of rule.style) {
           if (prop.startsWith('--')) allVars[prop] = rule.style.getPropertyValue(prop)
         }
@@ -282,7 +282,7 @@ emit `--color-primary-50..900` for EP — EP uses `light-9/8/7/5/3 + dark-2`.
 ### Quality gate
 
 Before generating the override file, run this check **in the browser, on the
-preview page, in light + dark mode**:
+preview page**:
 
 ```js
 const check = (selector) => {
@@ -303,7 +303,6 @@ const check = (selector) => {
   if (missing.length) console.error(`[${selector}] Missing tokens:`, missing)
 }
 check(':root')
-check('html.dark')
 ```
 
 If any are missing, **add them to `colors.css` before generating the override**.
@@ -391,8 +390,9 @@ User changes mind → "we want bigger headings": bump `--font-size-ratio: 1.25` 
 Before generating the override file, check all anchors are defined:
 
 ```js
+// EP / 中创 (7 stops): anchor 是单色 + 派生 light-3/5/7/8/9 + dark-2
 const anchors = [
-  '--color-primary-500', '--color-success-500', '--color-warning-500', '--color-danger-500', '--color-info-500',
+  '--color-primary', '--color-success', '--color-warning', '--color-danger', '--color-info',
   '--space-base', '--radius-base',
   '--font-size-base', '--font-size-ratio',
   '--line-height-base',
@@ -401,6 +401,7 @@ const anchors = [
 ]
 const missing = anchors.filter(a => !getComputedStyle(document.documentElement).getPropertyValue(a).trim())
 if (missing.length) console.error('Missing anchors:', missing)
+// AntD 走 10 档,独立 anchor 表(--color-primary-50..900),见 references/token-spec.md § 2
 ```
 
 If any are missing, ask the user OR pick a sensible default from the design source. **Never generate a `colors.css` / `spacing.css` / etc. with hand-picked values for derivable categories.**
@@ -568,8 +569,6 @@ Verify the override covers:
 - [ ] **All background variables** (page, surface, container, overlay).
 - [ ] **All border color variables** (default, light, lighter, extra-light, dark).
 - [ ] **Font family** at minimum.
-- [ ] **Dark mode variant** in `[data-theme="dark"]` block (EP / 中创).
-      For AntD, dark mode is handled via `theme.algorithm: darkAlgorithm`, not CSS.
 
 A "complete" override for Element Plus is ~80 lines of CSS. Don't be tempted to trim
 it down — every variable exists for a reason.
@@ -595,7 +594,6 @@ The preview page is the user's acceptance test. Before declaring done, verify:
 - [ ] Each component shows at least: default, hover, disabled, active states
 - [ ] Color tokens are visible as swatches (with token names + HEX)
 - [ ] Typography tokens are visible as labeled samples
-- [ ] Dark mode toggle works (button to flip `data-theme`)
 - [ ] Preview works in Chrome / Safari / Firefox (if cross-browser is a concern)
 
 ---
@@ -678,10 +676,10 @@ high-traffic composite components:
 /* Element Plus — defensive composite component override */
 :root {
   /* Re-assert after lib CSS in case any selector is more specific */
-  --el-button-bg-color:           var(--color-primary-500);
-  --el-button-border-color:       var(--color-primary-500);
-  --el-button-hover-bg-color:     var(--color-primary-400);
-  --el-button-active-bg-color:    var(--color-primary-600);
+  --el-button-bg-color:           var(--color-primary);
+  --el-button-border-color:       var(--color-primary);
+  --el-button-hover-bg-color:     var(--color-primary-light-3);
+  --el-button-active-bg-color:    var(--color-primary-dark-2);
   --el-button-disabled-bg-color:  var(--color-bg-secondary);
 }
 ```
@@ -696,18 +694,17 @@ but it eliminates the most common "only 80% of components updated" complaint.
 The README must answer, in this order:
 
 1. **3-line integration** (copy-paste ready)
-2. **One line of HTML/JS for dark mode toggle**
-3. **One line for how to change a token** ("改 `tokens/colors.css` 里的 `--color-primary-500`")
-4. **A list of what was NOT overridden** (e.g. "字体、间距沿用原样,因为你选了只换颜色")
-5. **Troubleshooting** (the 3 most common issues, see below)
+2. **One line for how to change a token** ("改 `tokens/colors.css` 里的 `--color-primary`")
+3. **A list of what was NOT overridden** (e.g. "字体、间距沿用原样,因为你选了只换颜色")
+4. **Troubleshooting** (the 3 most common issues, see below)
 
 ### Top 3 Troubleshooting Issues
 
 | Problem                                          | Cause                                          | Fix                                                |
 |--------------------------------------------------|------------------------------------------------|----------------------------------------------------|
 | "我改了 token 颜色但组件没变"                   | Override 引入顺序错了                          | 确保先引 lib 的 CSS,再引 `theme.css`,再引 override |
-| "暗色模式不切换"                                 | 切换按钮没改 `data-theme` 属性                | `document.documentElement.setAttribute('data-theme', 'dark')` |
 | "某个组件不响应"                                  | 该组件用了 hardcoded 颜色,不在 CSS 变量体系里 | 用 DevTools 看 computed style,提 issue             |
+| "颜色看着太淡/太深"                              | color-mix 推导的档位和你的设计稿不完全一致     | 在 `tokens/colors.css` 显式覆盖具体档位           |
 
 ---
 
@@ -741,13 +738,10 @@ RAW_PX=$(grep -E "[0-9]+px" overrides/<lib>-theme-override.css | grep -vE "(cont
 #    be color-mix derivations, not hand-rolled hex)
 grep -E "color-mix\(in srgb" tokens/colors.css
 
-# 6. Dark mode block exists
-grep -q "data-theme" overrides/<lib>-theme-override.css
-
-# 7. Preview file exists
+# 6. Preview file exists
 test -f preview/comprehensive-preview.html
 
-# 8. README has integration snippet
+# 7. README has integration snippet
 grep -q "import" README.md
 
 # 9. Preview directory strictly contains 1 .html file
