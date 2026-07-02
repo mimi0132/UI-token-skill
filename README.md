@@ -13,8 +13,7 @@
 - 🎨 **15 维度提取** — 颜色、字体、字号、字重、行高、间距、圆角、阴影、边框、栅格、容器、断点、图标尺寸、动效曲线、焦点环
 - 🔄 **变量自动推导** — 单锚点 + `color-mix` / `calc` / 几何级数,设计稿只给 1 个值也能生成完整色阶
 - 🧩 **3 个组件库** — Element Plus 2.4 · Ant Design v5 · 中创 fork
-- 🌓 **暗色模式** — 一行 `data-theme` 切换,色阶自动反转
-- 🎯 **交互零侵入** — 组件库原有的点击 / 键盘 / 焦点 / 表单 / 弹窗 / a11y / API 一行代码不动
+-  **交互零侵入** — 组件库原有的点击 / 键盘 / 焦点 / 表单 / 弹窗 / a11y / API 一行代码不动
 - 📦 **零依赖** — 不需要 Tailwind / 预处理器
 
 ---
@@ -124,27 +123,7 @@ export default function App() {
 
 > **重要**: AntD v5 的 token 系统在 JS 侧,不靠 CSS 变量覆盖。SKILL.md Step 2 会输出 `token.generated.json` 给 `ConfigProvider` 用。
 
-### 2. 切暗色模式
-
-```html
-<!-- 切换 -->
-<html data-theme="dark">  <!-- 暗色 -->
-<html>                   <!-- 亮色(默认) -->
-```
-
-```js
-// 运行时切换
-document.documentElement.setAttribute('data-theme', 'dark')
-
-// 配合 Vue / React store:
-// 持久化到 localStorage,刷新不丢
-localStorage.setItem('theme', 'dark')
-document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light')
-```
-
-> AntD v5 也支持 `theme.algorithm: theme.darkAlgorithm` 切换 — 两套 token 系统要分别同步切换。
-
-### 3. 改 token(全组件跟着变)
+### 2. 改 token(全组件跟着变)
 
 业务**永远不直接写 hex / px**,全部用 `var(--xxx)`。改设计只动 `tokens/` 目录:
 
@@ -166,7 +145,7 @@ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme'
 }
 ```
 
-### 4. 业务代码里怎么写
+### 3. 业务代码里怎么写
 
 ```css
 /* 推荐:用 token,不用 hex */
@@ -198,16 +177,13 @@ document.documentElement.setAttribute('data-theme', localStorage.getItem('theme'
 }}>按钮</Button>
 ```
 
-### 5. 常见问题
+### 4. 常见问题
 
 **Q: 改一个 token 没生效?**
 A: 检查 import 顺序 — 库 CSS → `tokens/theme.css` → `overrides/<lib>-theme-override.css`。override **必须在最后**(覆盖 CSS 变量需要后置声明)。
 
 **Q: hover / active 状态颜色不对?**
 A: 大概率是只覆盖了 `--el-color-primary` 没覆盖 `light-3/5/7/8/9 / dark-2`。这几个都映射,hover / active 才正常。
-
-**Q: 暗色模式不切换?**
-A: 检查 `[data-theme="dark"]` 选择器在 override 文件里有没有定义。
 
 **Q: 某个组件完全没变?**
 A: 该组件可能用了硬编码颜色(在 JS 里 `style={{ color: '#fff' }}`),不在 CSS 变量体系里。要么改组件源码(不推荐),要么用更高优先级 selector 覆盖。
