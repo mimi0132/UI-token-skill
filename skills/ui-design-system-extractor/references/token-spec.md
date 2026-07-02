@@ -3,602 +3,765 @@
 This file is the detailed spec for the 7 token files. Load when the agent needs to know
 the exact variable name, value range, or dark-mode mapping.
 
----
-
-## 0. Color System Derivation Algorithm
-
-> **Critical rule**: The design source is **sampling points**, not a complete palette.
-> Figma exports typically give 1-3 stops of the primary and 1-2 swatches of each
-> semantic color. The agent's job is to **derive the rest** into a complete,
-> perceptually uniform scale that fully covers every lib variable.
-
-### 0.1 The "single anchor + math" approach
-
-Pick **one anchor color per scale** (usually the 500 stop, sometimes the 600). Derive
-all 9 other stops using `color-mix()`. Calibrated percentages that produce a
-perceptually uniform scale similar to Tailwind / Radix:
-
-```css
-:root {
-  /* The single anchor — from the design */
-  --color-primary-500: #6366F1;
-
-  /* Derived lighter stops (mix with white) */
-  --color-primary-50:  color-mix(in srgb, var(--color-primary-500)  8%, white);
-  --color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
-  --color-primary-200: color-mix(in srgb, var(--color-primary-500) 28%, white);
-  --color-primary-300: color-mix(in srgb, var(--color-primary-500) 44%, white);
-  --color-primary-400: color-mix(in srgb, var(--color-primary-500) 68%, white);
-
-  /* Derived darker stops (mix with black) */
-  --color-primary-600: color-mix(in srgb, var(--color-primary-500) 88%, black);
-  --color-primary-700: color-mix(in srgb, var(--color-primary-500) 76%, black);
-  --color-primary-800: color-mix(in srgb, var(--color-primary-500) 60%, black);
-  --color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
-}
-```
-
-**Change `--color-primary-500` once, all 9 stops re-derive automatically.** No
-maintenance burden.
-
-### 0.2 Mixing table (10-stop scale)
-
-| Stop | Mix % of anchor | With    | Use case                                  |
-|------|-----------------|---------|-------------------------------------------|
-| 50   | 8%              | white   | Subtle background tints, hover wash       |
-| 100  | 16%             | white   | Selected background, badges               |
-| 200  | 28%             | white   | Disabled background, light borders        |
-| 300  | 44%             | white   | Light hover, focus ring at 30% alpha     |
-| 400  | 68%             | white   | Secondary buttons, links                  |
-| 500  | 100%            | (anchor)| **Primary buttons, links, brand**         |
-| 600  | 88%             | black   | Primary hover                             |
-| 700  | 76%             | black   | Primary active                            |
-| 800  | 60%             | black   | Primary text on light bg (high contrast)  |
-| 900  | 44%             | black   | Dark mode primary, high-emphasis text     |
-
-**Why these percentages**: They approximate a perceptually uniform L* curve in
-Oklch, matching what Tailwind v3+ and Radix Colors produce. They look the same
-across hues (not too aggressive for warm colors, not too subtle for cool).
-
-### 0.3 What to extract vs derive
-
-| Design source gives        | Agent does                                            |
-|----------------------------|-------------------------------------------------------|
-| Only primary-500           | Use as anchor, derive 50/100/200/300/400/600/700/800/900 |
-| Primary-500 + primary-700  | Use both, derive the rest                              |
-| All 10 primary stops       | Use all, skip derivation for primary                   |
-| Only "main blue" + "hover" | Treat "main" as 500, "hover" as 600, derive the rest   |
-| No primary at all          | Pick from user-provided accent OR ask                  |
-
-**The "fill in the gaps" rule**: When the design gives SOME stops explicitly, use
-those exact values and only derive the missing ones. When the design gives NONE,
-derive everything from the anchor. Never mix hand-picked hex into a derived scale
-unless the design explicitly specifies it.
-
-### 0.4 Neutral scale derivation
-
-Designs rarely specify neutrals. Derive from the primary hue, fully desaturated:
-
-```css
-:root {
-  /* Anchor: a cool gray that harmonizes with the primary */
-  --color-neutral-h: 220;        /* hue = same as primary's hue, or +10° for cooler */
-  --color-neutral-s: 0%;         /* fully desaturated */
-  --color-neutral-l: 50%;
-
-  --color-neutral-50:  hsl(var(--color-neutral-h) var(--color-neutral-s) 97%);
-  --color-neutral-100: hsl(var(--color-neutral-h) var(--color-neutral-s) 94%);
-  --color-neutral-200: hsl(var(--color-neutral-h) var(--color-neutral-s) 88%);
-  --color-neutral-300: hsl(var(--color-neutral-h) var(--color-neutral-s) 78%);
-  --color-neutral-400: hsl(var(--color-neutral-h) var(--color-neutral-s) 65%);
-  --color-neutral-500: hsl(var(--color-neutral-h) var(--color-neutral-s) 50%);
-  --color-neutral-600: hsl(var(--color-neutral-h) var(--color-neutral-s) 40%);
-  --color-neutral-700: hsl(var(--color-neutral-h) var(--color-neutral-s) 30%);
-  --color-neutral-800: hsl(var(--color-neutral-h) var(--color-neutral-s) 16%);
-  --color-neutral-900: hsl(var(--color-neutral-h) var(--color-neutral-s)  8%);
-}
-```
-
-**Tuning knobs**:
-- Add 5-10% saturation for a "warm" feel (e.g., `--color-neutral-s: 8%`)
-- Shift hue ±20° to harmonize with the primary's hue
-- If the design explicitly provides neutrals (e.g., "text gray is #1F2937"), use them as
-  the 800/900 stops and derive the rest
-
-### 0.5 Semantic color derivation
-
-For success / warning / danger / info, the design often gives one swatch each. Use
-the same anchor+math approach. If the design gives NONE, use these defaults which
-work for 90% of B2B products:
-
-```css
-:root {
-  --color-success-500: #10B981;   /* green */
-  --color-warning-500: #F59E0B;   /* amber */
-  --color-danger-500:  #EF4444;   /* red */
-  --color-info-500:    #3B82F6;   /* blue (or use --color-primary-500 for "info = primary") */
-}
-```
-
-If the design gives explicit semantic colors (e.g., "error red is #DC2626"), use
-those as the 500 anchor and derive the rest.
-
-### 0.6 State colors (hover / active / disabled / focus)
-
-Don't add a new scale — consume from the primary scale. Map every state to an
-existing stop:
-
-| State              | Token                              | Element Plus variable    |
-|--------------------|------------------------------------|--------------------------|
-| Primary default    | `--color-primary-500`              | `--el-color-primary`     |
-| Primary hover      | `--color-primary-600`              | `--el-color-primary-light-3` |
-| Primary active     | `--color-primary-700`              | `--el-color-primary-dark-2`  |
-| Primary disabled   | `--color-neutral-200`              | `--el-color-primary-light-9` (or override with neutral) |
-| Focus ring         | `--color-primary-500` at 30% alpha | direct CSS `:focus-visible` |
-
-This way, "change the primary" automatically changes all states — no separate
-state variables to maintain.
-
-### 0.7 The full lib coverage check
-
-After deriving, verify every color variable the lib exposes is mapped. For
-Element Plus, the complete list (~40 vars):
-
-```
---el-color-primary, --el-color-primary-light-3, --el-color-primary-light-5,
---el-color-primary-light-7, --el-color-primary-light-8, --el-color-primary-light-9,
---el-color-primary-dark-2,
-
---el-color-success (same light/dark set, 7 vars),
---el-color-warning (7 vars),
---el-color-danger  (7 vars),
---el-color-info    (7 vars),
-
---el-text-color-primary, --el-text-color-regular, --el-text-color-secondary,
---el-text-color-placeholder, --el-text-color-disabled,
-
---el-border-color, --el-border-color-light, --el-border-color-lighter,
---el-border-color-extra-light, --el-border-color-dark, --el-border-color-darker,
---el-border-color-hover,
-
---el-fill-color, --el-fill-color-light, --el-fill-color-lighter,
---el-fill-color-extra-light, --el-fill-color-blank, --el-fill-color-dark,
---el-mask-color,
-```
-
-If your `colors.css` doesn't have a token for each of these, **add it before
-generating the override file**. Gaps here = "前边换了后边没变".
+> **⚠️ BIG CHANGE (v3, 2026-07)**: Tokens are now **component-library-driven**, not
+> generic-design-system-driven. We do **NOT** ship a universal `--color-primary-50/100/.../900`
+> palette that every project must use. Instead, we ship **3 templates** (Element Plus 2.4,
+> Ant Design v5, 中创 fork), each 1:1 matching the real CSS variables of that library.
+> See `references/lib-detect.md` for auto-detection and `references/role-glossary.md` for
+> natural-language role prompts.
 
 ---
 
-## 0.5 Other Derivable Variable Categories
+## 0. Design principles
 
-The "single anchor + math" pattern isn't unique to colors. **Six other categories**
-share this property. Knowing which ones are derivable (and which are conventional)
-lets the agent fill gaps the same way it does for colors.
+### 0.1 Why component-library-driven, not generic design system
 
-### The "derivable" matrix
+A "design system" is not the goal. The goal is: **change the visual layer of an existing
+component library without rebuilding it**. If the user has installed Element Plus, they
+don't want a generic 10-stop palette named `--color-primary-50..900` mapped onto 85 EP
+variables. They want the EP variable names themselves, with new values.
 
-| Category        | Derivable? | Anchor(s)                    | Derivation method              |
-|-----------------|------------|------------------------------|--------------------------------|
-| **Color**       | ✅ Yes     | `--color-primary-500`        | `color-mix(in srgb, …, white\|black)` |
-| **Spacing**     | ✅ Yes     | `--space-base` (4 or 8)      | `calc(var(--space-base) * N)`  |
-| **Radius**      | ✅ Yes     | `--radius-base` (4 or 6)     | `calc(var(--radius-base) * N)` |
-| **Font size**   | ✅ Yes     | `--font-size-base` + `--font-size-ratio` | `calc(var(--font-size-base) * pow(var(--font-size-ratio), N))` |
-| **Line height** | ✅ Yes     | `--line-height-base`         | direct value or `calc(...)`     |
-| **Border width**| ✅ Yes     | `--border-width-base` (1px)  | `calc(var(--border-width-base) * N)` |
-| **Motion dur.** | ✅ Yes     | `--motion-duration-base`     | `calc(var(--motion-duration-base) * N)` |
-| Font family     | ❌ No      | —                            | must be specified              |
-| Font weight     | ❌ No      | —                            | industry fixed 4 values         |
-| Shadow          | ❌ No      | —                            | 3-5 discrete tokens (degrees of freedom too high) |
-| Grid columns    | ❌ No      | —                            | industry fixed 12/16/24         |
-| Breakpoints     | ❌ No      | —                            | industry fixed                  |
-| Motion easing   | ❌ No      | —                            | industry fixed 3-4 curves       |
+Three supported libraries, three different color structures:
 
-**Rule of thumb**: if the property has a **single dimension** (size, length, time),
-it can be derived. If it has **multiple dimensions** (shadow = offset x/y + blur + spread + color + opacity), use a small set of named tokens.
+| Library              | Primary color structure                              | Total CSS vars |
+|----------------------|------------------------------------------------------|----------------|
+| Element Plus 2.4     | 7-stop scale `base / light-3/5/7/8/9 / dark-2`       | ~80            |
+| Ant Design v5        | 10-stop scale `1..10` + semantic variants per role   | ~110           |
+| 中创 fork            | Inherits EP 2.4 + `--cv-*` extensions                | ~85            |
 
-### Why this matters
+Each library has its own structure. We **expose each structure as a separate token template**.
+Never mix them. Never invent variables that don't exist in the chosen library.
 
-The user will say "I gave you 16px body text and 24px heading, why aren't all my
-text sizes set?" — because the design gave 2 of 8 and the lib needs all 8. Same
-answer as color: "we derived the rest from a base + ratio." Make it explicit in
-the README so the user knows the magic happened for **every category**, not just
-color.
+### 0.2 Auto-detect the library (mandatory before any color work)
 
-### Tunable knobs
+Read `package.json` to find which lib the project uses and its version:
 
-| Anchor             | Common values          | When to pick                           |
-|--------------------|------------------------|----------------------------------------|
-| `--space-base`     | 4px (compact) / 8px (default) / 4px (Material) | Density of the design source |
-| `--radius-base`    | 2px (sharp) / 4px (default) / 6px (rounded) / 12px (iOS-style) | Visual personality |
-| `--font-size-base` | 14px (compact) / 16px (default) / 18px (spacious) | Body text size in the design |
-| `--font-size-ratio`| 1.125 (subtle) / 1.25 (Material) / 1.333 (strong) / 1.5 (dramatic) | Heading contrast strength |
-| `--border-width-base` | 1px (always)        | Almost never change                    |
-| `--motion-duration-base` | 150ms (snappy) / 200ms (default) / 300ms (leisurely) | Brand tempo |
+```bash
+# In project root, run all of these and pick whichever returns a version
+node -p "require('./package.json').dependencies?.['element-plus'] || require('./package.json').devDependencies?.['element-plus']" 2>/dev/null
+node -p "require('./package.json').dependencies?.['antd']        || require('./package.json').devDependencies?.['antd']"        2>/dev/null
+node -p "require('./package.json').dependencies?.['naive-ui']    || require('./package.json').devDependencies?.['naive-ui']"    2>/dev/null
+
+# 中创 fork is detected by looking for --cv- variables in node_modules/element-plus/dist/index.css
+# OR for these fork markers in scss: .cv- / cv-avatar / cv-button / cv-message
+grep -r "cv-" node_modules/element-plus/lib/theme-chalk/*.scss 2>/dev/null | head -3
+```
+
+If **none** of the 3 supported libs is found → STOP. Tell the user:
+
+> "This skill supports Element Plus 2.4, Ant Design v5, and 中创 fork. Your project uses
+> `{detected-lib}`. Add one of the supported libs, or extend this skill."
+
+See `references/lib-detect.md` for the full detection script and per-library version pin list.
+
+### 0.3 Get the real CSS variable list from the installed version (mandatory)
+
+**Do not** generate tokens from a memorized list. The lib's variables may differ between
+versions. Dump the real ones from `node_modules`:
+
+```bash
+LIB_DIR="node_modules/element-plus"
+[ -d "$LIB_DIR" ] || LIB_DIR="node_modules/antd"
+[ -d "$LIB_DIR" ] || LIB_DIR="node_modules/naive-ui"
+
+# For Element Plus
+grep -oE -- "--el-[a-z0-9-]+" "$LIB_DIR/dist/index.css" 2>/dev/null | sort -u
+
+# For Ant Design v5 (CSS-in-JS, so dump from source)
+grep -oE "colorPrimary[A-Za-z]*" "$LIB_DIR/lib/theme/interface/seeds.ts" \
+  "$LIB_DIR/lib/theme/interface/maps.ts" 2>/dev/null | sort -u
+```
+
+**Output** of this dump = the source of truth for the token template. Cross-reference it
+against § 1 / § 2 / § 3 of this document. If the dump contains variables not in the
+template (e.g. new in 2.5), add them to the template before generating tokens.
+
+### 0.4 The 3-step workflow
+
+1. **Auto-detect** the lib from `package.json` (see 0.2).
+2. **Dump** the lib's real CSS variables (see 0.3). This produces the lib's "shape".
+3. **Pick the matching template** from § 1 (EP), § 2 (AntD), or § 3 (中创) below.
+   Fill the template from the design source. **Do not invent variables that aren't in the dump.**
+
+### 0.5 Color derivation algorithm (color-mix) — when the design only gives 1 stop
+
+The lib's real variables come in **N stops** (EP: 7, AntD: 10, 中创: 7). If the design source
+only gives **1 anchor color** for a role, derive the other stops with `color-mix()`.
+
+**Element Plus 7-stop scale** (light-3/5/7/8/9 + dark-2 derived from base 500):
+
+```css
+--color-primary-base:     #6366F1;   /* anchor from design, 500 stop */
+
+/* Lighter (mix with white) */
+--color-primary-light-3:  color-mix(in srgb, var(--color-primary-base) 75%, white); /* 300 */
+--color-primary-light-5:  color-mix(in srgb, var(--color-primary-base) 90%, white); /* 100 */
+--color-primary-light-7:  color-mix(in srgb, var(--color-primary-base) 96%, white); /* 50 */
+--color-primary-light-8:  color-mix(in srgb, var(--color-primary-base) 98%, white);
+--color-primary-light-9:  color-mix(in srgb, var(--color-primary-base) 99%, white);
+
+/* Darker (mix with black) */
+--color-primary-dark-2:   color-mix(in srgb, var(--color-primary-base) 84%, black); /* 700 */
+```
+
+**Ant Design 10-stop scale** (1..10 from base 6):
+
+```css
+--color-primary-6: #6366F1;   /* anchor from design */
+
+/* Lighter (mix with white) */
+--color-primary-1: color-mix(in srgb, var(--color-primary-6) 10%, white);
+--color-primary-2: color-mix(in srgb, var(--color-primary-6) 20%, white);
+--color-primary-3: color-mix(in srgb, var(--color-primary-6) 35%, white);
+--color-primary-4: color-mix(in srgb, var(--color-primary-6) 55%, white);
+--color-primary-5: color-mix(in srgb, var(--color-primary-6) 80%, white);
+
+/* Darker (mix with black) */
+--color-primary-7: color-mix(in srgb, var(--color-primary-6) 80%, black);
+--color-primary-8: color-mix(in srgb, var(--color-primary-6) 65%, black);
+--color-primary-9: color-mix(in srgb, var(--color-primary-6) 45%, black);
+--color-primary-10: color-mix(in srgb, var(--color-primary-6) 25%, black);
+```
+
+**When the design gives more than 1 stop** (e.g. primary-500 + primary-700), use the given
+stops as anchors and only derive the missing ones. **Never mix hand-picked hex into a derived
+scale unless the design explicitly specifies that exact stop.**
+
+### 0.6 Naming convention
+
+For each lib, the token names **MATCH the lib's own variable names**, with a lib-specific
+prefix that the override file uses to re-route them:
+
+| Lib              | Token template prefix      | Override target prefix     |
+|------------------|----------------------------|----------------------------|
+| Element Plus 2.4 | `--color-<role>-<stop>`    | `--el-<role>-<stop>`       |
+| Ant Design v5    | `--color-<role>-<stop>`    | `--ant-<role>-<stop>`      |
+| 中创 fork        | `--color-<role>-<stop>`    | `--el-<role>-<stop>` + `--cv-<role>` |
+
+Example for EP primary: our token is `--color-primary-base`, override is
+`--el-color-primary: var(--color-primary-base)`. This way the project's tokens stay lib-agnostic
+in the source file, but the override translates 1:1 to the real CSS variable.
+
+**For other token categories (typography, spacing, radius, etc.)** the same rule applies:
+use the lib's own variable names, do not invent new categories.
 
 ---
 
-## Naming Convention
+## 1. Element Plus 2.4 token template
 
-```
---{category}-{role}-{scale}
---{category}-{role}-{variant}
-```
+> **Dump the real variables first** (§ 0.3). The list below is the standard set for 2.4.x.
+> If the dump contains extra variables not listed here, add them before generating tokens.
 
-| Category   | Examples                                              |
-|------------|-------------------------------------------------------|
-| `color`    | `--color-primary-500`, `--color-text-secondary`      |
-| `font`     | `--font-family-heading`, `--font-size-md`, `--font-weight-semibold` |
-| `space`    | `--space-4`, `--space-component-padding-md`          |
-| `radius`   | `--radius-sm`, `--radius-md`                         |
-| `shadow`   | `--shadow-sm`, `--shadow-md`, `--shadow-overlay`     |
-| `motion`   | `--motion-duration-fast`, `--motion-easing-standard`  |
+### 1.1 Color roles (natural language → EP variable)
 
-Rules:
-- **kebab-case** only
-- **Semantic** names, not visual (`--color-primary-500` not `--blue-500`)
-- **No magic numbers** in component files — only token references
+When asking the user which design color maps to which role, use **natural language** (see
+`role-glossary.md`). Do NOT ask the user to fill in `primary` / `success` etc.
 
----
+| # | Natural language role                              | EP variable group       | Stops                              |
+|---|-----------------------------------------------------|-------------------------|------------------------------------|
+| 1 | 品牌主色 (按钮、链接、品牌元素)                     | `--el-color-primary`    | base/light-3/5/7/8/9/dark-2        |
+| 2 | 成功色 (对勾、确认、完成)                           | `--el-color-success`    | base/light-3/5/7/8/9/dark-2        |
+| 3 | 警告色 (提示、需注意)                               | `--el-color-warning`    | base/light-3/5/7/8/9/dark-2        |
+| 4 | 错误/危险色 (错误提示、删除)                        | `--el-color-danger`     | base/light-3/5/7/8/9/dark-2        |
+| 5 | 信息色 (普通通知、可点击)                           | `--el-color-info`       | base/light-3/5/7/8/9/dark-2        |
+| 6 | 页面背景色 (整页底色)                               | `--el-bg-color-page`    | 1                                  |
+| 7 | 卡片/弹窗背景 (默认白色)                            | `--el-bg-color`         | 1                                  |
+| 8 | 浮层背景 (下拉、tooltip、弹窗)                      | `--el-bg-color-overlay` | 1                                  |
+| 9 | 主要文字 (标题)                                     | `--el-text-color-primary`     | 1                            |
+| 10| 正文文字 (段落、表单)                               | `--el-text-color-regular`     | 1                            |
+| 11| 次要文字 (辅助说明)                                 | `--el-text-color-secondary`   | 1                            |
+| 12| 占位文字 (input placeholder)                       | `--el-text-color-placeholder` | 1                            |
+| 13| 禁用文字                                           | `--el-text-color-disabled`    | 1                            |
+| 14| 边框 (默认卡片边框)                                | `--el-border-color`      | 1                                 |
+| 15| 浅边框 (表格内分隔)                                | `--el-border-color-light`     | 1                            |
+| 16| 更浅边框 (装饰)                                    | `--el-border-color-lighter`   | 1                            |
+| 17| 最浅边框 (虚线装饰)                                | `--el-border-color-extra-light` | 1                            |
+| 18| 深边框 (输入框默认)                                | `--el-border-color-dark`     | 1                            |
+| 19| 边框 hover                                        | `--el-border-color-hover`    | 1                            |
+| 20| 填充 (按钮次级背景)                                | `--el-fill-color`         | 1                                 |
+| 21| 浅填充 (下拉 hover)                                | `--el-fill-color-light`    | 1                                 |
+| 22| 禁用背景                                           | `--el-disabled-bg-color`   | 1                                 |
+| 23| 遮罩 (弹窗蒙层)                                    | `--el-mask-color`         | 1                                 |
 
-## 1. `colors.css`
+For the full list (60+ variables) including light/lighter/extra-light fill colors, overlay-color
+variants, box-shadow variants, and component-specific overrides, see `override-patterns.md`.
 
-> **See [§ 0 Color System Derivation Algorithm](#0-color-system-derivation-algorithm) first.** The 10-stop scales below are derived
-> from a single anchor using `color-mix()`. Don't hand-pick hex for the 9 derived stops.
-
-### 1.1 Primary scale (anchor from design, rest derived)
+### 1.2 Element Plus token file shape
 
 ```css
+/* theme.css (light) */
 :root {
-  /* 🔑 SINGLE ANCHOR — change this one value to re-derive the whole scale */
-  --color-primary-500: #6366F1;
+  /* 1. 品牌主色 — 设计稿给 base, 其他档用 color-mix 推导 */
+  --color-primary-base:      #6366F1;
+  --color-primary-light-3:   color-mix(in srgb, var(--color-primary-base) 75%, white);
+  --color-primary-light-5:   color-mix(in srgb, var(--color-primary-base) 90%, white);
+  --color-primary-light-7:   color-mix(in srgb, var(--color-primary-base) 96%, white);
+  --color-primary-light-8:   color-mix(in srgb, var(--color-primary-base) 98%, white);
+  --color-primary-light-9:   color-mix(in srgb, var(--color-primary-base) 99%, white);
+  --color-primary-dark-2:    color-mix(in srgb, var(--color-primary-base) 84%, black);
 
-  /* Lighter stops: mix with white */
-  --color-primary-50:  color-mix(in srgb, var(--color-primary-500)  8%, white);
-  --color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
-  --color-primary-200: color-mix(in srgb, var(--color-primary-500) 28%, white);
-  --color-primary-300: color-mix(in srgb, var(--color-primary-500) 44%, white);
-  --color-primary-400: color-mix(in srgb, var(--color-primary-500) 68%, white);
+  /* 2-5. 成功/警告/危险/信息色 — 同样 7 档 (省略, 同上结构) */
+  --color-success-base:      #67C23A;
+  /* ... color-mix 推导 light-3/5/7/8/9 + dark-2 */
 
-  /* Darker stops: mix with black */
-  --color-primary-600: color-mix(in srgb, var(--color-primary-500) 88%, black);
-  --color-primary-700: color-mix(in srgb, var(--color-primary-500) 76%, black);
-  --color-primary-800: color-mix(in srgb, var(--color-primary-500) 60%, black);
-  --color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
+  /* 6-8. 背景色 */
+  --color-bg-page:           #F2F3F5;
+  --color-bg-surface:        #FFFFFF;
+  --color-bg-overlay:        #FFFFFF;
+
+  /* 9-13. 文字色 5 档 */
+  --color-text-primary:      #303133;
+  --color-text-regular:      #606266;
+  --color-text-secondary:    #909399;
+  --color-text-placeholder:  #A8ABB2;
+  --color-text-disabled:     #C0C4CC;
+
+  /* 14-19. 边框色 6 档 + hover */
+  --color-border-default:    #DCDFE6;
+  --color-border-light:      #E4E7ED;
+  --color-border-lighter:    #EBEEF5;
+  --color-border-extra-light:#F2F6FC;
+  --color-border-dark:       #D4D7DE;
+  --color-border-hover:      #C0C4CC;
+
+  /* 20-22. 填充色 + 禁用 */
+  --color-fill-default:      #F0F2F5;
+  --color-fill-light:        #F5F7FA;
+  --color-disabled-bg:       var(--color-fill-light);
+
+  /* 23. 遮罩 */
+  --color-mask:              rgba(255, 255, 255, 0.9);
+  --color-mask-extra-light:  rgba(255, 255, 255, 0.3);
 }
-```
 
-### 1.2 Neutral scale (derived from primary hue, desaturated)
-
-```css
-:root {
-  --color-neutral-h: 220;   /* tune: same as primary's hue, or +10° cooler */
-  --color-neutral-s: 0%;    /* tune: 5-8% for warmer feel */
-
-  --color-neutral-50:  hsl(var(--color-neutral-h) var(--color-neutral-s) 97%);
-  --color-neutral-100: hsl(var(--color-neutral-h) var(--color-neutral-s) 94%);
-  --color-neutral-200: hsl(var(--color-neutral-h) var(--color-neutral-s) 88%);
-  --color-neutral-300: hsl(var(--color-neutral-h) var(--color-neutral-s) 78%);
-  --color-neutral-400: hsl(var(--color-neutral-h) var(--color-neutral-s) 65%);
-  --color-neutral-500: hsl(var(--color-neutral-h) var(--color-neutral-s) 50%);
-  --color-neutral-600: hsl(var(--color-neutral-h) var(--color-neutral-s) 40%);
-  --color-neutral-700: hsl(var(--color-neutral-h) var(--color-neutral-s) 30%);
-  --color-neutral-800: hsl(var(--color-neutral-h) var(--color-neutral-s) 16%);
-  --color-neutral-900: hsl(var(--color-neutral-h) var(--color-neutral-s)  8%);
-}
-```
-
-### 1.3 Semantic scales (one anchor each, rest derived)
-
-```css
-:root {
-  /* Success — green */
-  --color-success-500: #10B981;
-  --color-success-50:  color-mix(in srgb, var(--color-success-500)  8%, white);
-  --color-success-100: color-mix(in srgb, var(--color-success-500) 16%, white);
-  --color-success-200: color-mix(in srgb, var(--color-success-500) 28%, white);
-  --color-success-300: color-mix(in srgb, var(--color-success-500) 44%, white);
-  --color-success-400: color-mix(in srgb, var(--color-success-500) 68%, white);
-  --color-success-600: color-mix(in srgb, var(--color-success-500) 88%, black);
-  --color-success-700: color-mix(in srgb, var(--color-success-500) 76%, black);
-  --color-success-800: color-mix(in srgb, var(--color-success-500) 60%, black);
-  --color-success-900: color-mix(in srgb, var(--color-success-500) 44%, black);
-
-  /* Warning — amber */
-  --color-warning-500: #F59E0B;
-  --color-warning-50:  color-mix(in srgb, var(--color-warning-500)  8%, white);
-  --color-warning-100: color-mix(in srgb, var(--color-warning-500) 16%, white);
-  /* ... (apply same formula as success) */
-
-  /* Danger — red */
-  --color-danger-500: #EF4444;
-  --color-danger-50:  color-mix(in srgb, var(--color-danger-500)  8%, white);
+/* theme.css (dark) — html.dark */
+html.dark {
+  /* 全套反转: 设计稿给暗色 base, color-mix 推导 light-3/5/7/8/9 + dark-2 */
+  --color-primary-base:      #409EFF;   /* 与亮色 light-3 接近 */
+  --color-primary-light-3:   color-mix(in srgb, var(--color-primary-base) 75%, black);
   /* ... */
-
-  /* Info — usually = primary, or its own blue */
-  --color-info-500: var(--color-primary-500);   /* common: "info" = primary */
-  /* ... */
+  --color-bg-page:           #0A0A0A;
+  --color-bg-surface:        #141414;
+  --color-bg-overlay:        #1D1E1F;
+  --color-text-primary:      #E5EAF3;
+  --color-text-regular:      #CFD3DC;
+  --color-text-secondary:    #A3A6AD;
+  --color-text-placeholder:  #8D9095;
+  --color-text-disabled:     #6C6E72;
+  --color-border-default:    #4C4D4F;
+  --color-border-light:      #414243;
+  --color-border-lighter:    #363637;
+  --color-border-extra-light:#2B2B2C;
+  --color-border-dark:       #58585B;
+  --color-border-hover:      #636466;
+  --color-fill-default:      #303030;
+  --color-fill-light:        #262727;
+  --color-disabled-bg:       var(--color-fill-light);
+  --color-mask:              rgba(0, 0, 0, 0.8);
+  --color-mask-extra-light:  rgba(0, 0, 0, 0.3);
 }
 ```
 
-### 1.4 Semantic colors (consume from scales)
+**Override file** (`overrides/element-plus-theme-override.css`):
+```css
+/* 仅做 1:1 路由, 不做语义映射 */
+:root {
+  --el-color-primary:           var(--color-primary-base);
+  --el-color-primary-light-3:   var(--color-primary-light-3);
+  --el-color-primary-light-5:   var(--color-primary-light-5);
+  --el-color-primary-light-7:   var(--color-primary-light-7);
+  --el-color-primary-light-8:   var(--color-primary-light-8);
+  --el-color-primary-light-9:   var(--color-primary-light-9);
+  --el-color-primary-dark-2:    var(--color-primary-dark-2);
+
+  --el-color-success:           var(--color-success-base);
+  /* ... 同样 7 档 */
+  --el-color-warning:           var(--color-warning-base);
+  --el-color-danger:            var(--color-danger-base);
+  --el-color-info:              var(--color-info-base);
+
+  --el-bg-color-page:           var(--color-bg-page);
+  --el-bg-color:                var(--color-bg-surface);
+  --el-bg-color-overlay:        var(--color-bg-overlay);
+
+  --el-text-color-primary:      var(--color-text-primary);
+  --el-text-color-regular:      var(--color-text-regular);
+  --el-text-color-secondary:    var(--color-text-secondary);
+  --el-text-color-placeholder:  var(--color-text-placeholder);
+  --el-text-color-disabled:     var(--color-text-disabled);
+
+  --el-border-color:            var(--color-border-default);
+  --el-border-color-light:      var(--color-border-light);
+  /* ... */
+  --el-border-color-hover:      var(--color-border-hover);
+
+  --el-fill-color:              var(--color-fill-default);
+  --el-fill-color-light:        var(--color-fill-light);
+  --el-disabled-bg-color:       var(--color-disabled-bg);
+  --el-mask-color:              var(--color-mask);
+  --el-mask-color-extra-light:  var(--color-mask-extra-light);
+}
+
+html.dark {
+  --el-color-primary:           var(--color-primary-base);
+  /* ... 与 :root 同样路由 (变量在 html.dark 下重新定义) */
+}
+```
+
+### 1.3 Element Plus non-color tokens
 
 ```css
 :root {
-  --color-bg-primary:    var(--color-neutral-50);
-  --color-bg-secondary:  var(--color-neutral-100);
-  --color-bg-elevated:   white;
-  --color-bg-hover:      var(--color-neutral-100);
+  /* 字体 */
+  --font-family-base:    'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  --font-size-extra-large: 20px;
+  --font-size-large:     18px;
+  --font-size-medium:    16px;
+  --font-size-base:      14px;
+  --font-size-small:     13px;
+  --font-size-extra-small: 12px;
+  --font-weight-primary: 500;
+  --font-line-height-primary: 24px;
 
-  /* 5 级文字对比阶梯 (从最强到最弱):
-     primary > regular > secondary > placeholder > disabled
-     用于覆盖 Element Plus 的 --el-text-color-{primary,regular,secondary,placeholder,disabled} */
-  --color-text-primary:     var(--color-neutral-900);
-  --color-text-regular:     var(--color-neutral-800);
-  --color-text-secondary:   var(--color-neutral-600);
-  --color-text-placeholder: var(--color-neutral-500);
-  --color-text-disabled:    var(--color-neutral-400);
-  --color-text-inverse:     white;
+  /* 圆角 */
+  --border-radius-base:  4px;
+  --border-radius-small: 2px;
+  --border-radius-round: 20px;
+  --border-radius-circle: 100%;
 
-  --color-border-default:   var(--color-neutral-200);
-  --color-border-strong:    var(--color-neutral-300);
-  --color-border-focus:     var(--color-primary-500);
-  --color-border-focus-soft: color-mix(in srgb, var(--color-primary-500) 24%, transparent);
+  /* 过渡 */
+  --transition-duration: 0.3s;
+  --transition-duration-fast: 0.2s;
+
+  /* 组件尺寸 */
+  --component-size-large: 40px;
+  --component-size:       32px;
+  --component-size-small: 24px;
+
+  /* 边框 */
+  --border-width: 1px;
+  --border-style: solid;
 }
 ```
 
-### 1.5 Dark Mode (mandatory)
+Override target: `--el-font-*` / `--el-border-radius-*` / `--el-transition-*` /
+`--el-component-size-*` / `--el-border-width`. 1:1 mapping.
+
+---
+
+## 2. Ant Design v5 token template
+
+> **AntD v5 uses CSS-in-JS**, not raw CSS variables. Token names appear inside
+> `ConfigProvider({ theme: { token: {...}, components: {...} } })`. To override at runtime
+> from CSS, AntD v5.12+ exposes them as `--ant-*` CSS variables (via `cssVar: true`).
+> The dump (§ 0.3) confirms which CSS-variable names are available in the installed version.
+
+### 2.1 Color roles (natural language → AntD SeedToken)
+
+| # | Natural language role                              | AntD SeedToken         | MapToken derivatives (10-stop)                                          |
+|---|-----------------------------------------------------|------------------------|--------------------------------------------------------------------------|
+| 1 | 品牌主色 (按钮、链接)                               | `colorPrimary`         | `colorPrimaryBg/BgHover/Border/BorderHover/Hover/Text/TextHover/TextActive` |
+| 2 | 成功色 (对勾、确认)                                | `colorSuccess`         | `colorSuccessBg/BgHover/Border/BorderHover/Text/TextHover/TextActive` + `colorSuccess-1..10` |
+| 3 | 警告色                                             | `colorWarning`         | same pattern                                                            |
+| 4 | 错误/危险色                                        | `colorError`           | same pattern                                                            |
+| 5 | 信息色                                             | `colorInfo`            | same pattern                                                            |
+| 6 | 超链接颜色                                         | `colorLink`            | `colorLinkHover/Active`                                                 |
+| 7 | 基础文字色 (派生 5 档)                              | `colorTextBase`        | `colorText/TextSecondary/TextTertiary/TextQuaternary/Heading`            |
+| 8 | 基础背景色 (派生 5 档)                              | `colorBgBase`          | `colorBgContainer/ContainerDisabled/Elevated/Layout/Spotlight/Mask`     |
+| 9 | 边框 (默认)                                        | (derived)              | `colorBorder/BorderSecondary`                                           |
+| 10| 填充 (下拉 hover)                                  | (derived)              | `colorFill/FillSecondary/FillTertiary/Quaternary`                       |
+| 11| 文字禁用                                           | (derived)              | `colorTextDisabled`                                                     |
+| 12| 占位文字 (input)                                   | (derived)              | `colorTextPlaceholder`                                                  |
+
+For the full AntD v5 token list, see `override-patterns.md § Ant Design v5` and the
+official docs at https://ant.design/docs/react/customize-theme. For the full SeedToken
+schema, see `node_modules/antd/lib/theme/interface/seeds.ts`.
+
+### 2.2 AntD token file shape
 
 ```css
+/* theme.css (light) */
+:root {
+  /* 1. 品牌主色 — 1 个 anchor, 10 档 + 8 个语义变体 */
+  --color-primary:               #6366F1;  /* anchor, 6 档 */
+  --color-primary-1:             color-mix(in srgb, var(--color-primary) 10%, white);
+  --color-primary-2:             color-mix(in srgb, var(--color-primary) 20%, white);
+  --color-primary-3:             color-mix(in srgb, var(--color-primary) 35%, white);
+  --color-primary-4:             color-mix(in srgb, var(--color-primary) 55%, white);
+  --color-primary-5:             color-mix(in srgb, var(--color-primary) 80%, white);
+  --color-primary-7:             color-mix(in srgb, var(--color-primary) 80%, black);
+  --color-primary-8:             color-mix(in srgb, var(--color-primary) 65%, black);
+  --color-primary-9:             color-mix(in srgb, var(--color-primary) 45%, black);
+  --color-primary-10:            color-mix(in srgb, var(--color-primary) 25%, black);
+  --color-primary-bg:            var(--color-primary-1);
+  --color-primary-bg-hover:      var(--color-primary-2);
+  --color-primary-border:        var(--color-primary-3);
+  --color-primary-border-hover:  var(--color-primary-4);
+  --color-primary-hover:         var(--color-primary-5);
+  --color-primary-text:          var(--color-primary-7);
+  --color-primary-text-hover:    var(--color-primary-8);
+  --color-primary-text-active:   var(--color-primary-9);
+
+  /* 2-5. 成功/警告/错误/信息色 — 同样结构 (省略) */
+  --color-success:               #52C41A;
+  --color-warning:               #FAAD14;
+  --color-error:                 #FF4D4F;
+  --color-info:                  #1677FF;
+
+  /* 6. 超链接 */
+  --color-link:                  #1677FF;
+  --color-link-hover:            #4096FF;
+  --color-link-active:           #0958D9;
+
+  /* 7. 基础文字色 — 派生 5 档 */
+  --color-text-base:             #000000;
+  --color-text:                  rgba(0, 0, 0, 0.88);
+  --color-text-secondary:        rgba(0, 0, 0, 0.65);
+  --color-text-tertiary:         rgba(0, 0, 0, 0.45);
+  --color-text-quaternary:       rgba(0, 0, 0, 0.25);
+  --color-text-disabled:         rgba(0, 0, 0, 0.25);
+  --color-text-placeholder:      rgba(0, 0, 0, 0.25);
+  --color-text-heading:          rgba(0, 0, 0, 0.88);
+
+  /* 8. 基础背景色 — 派生 5 档 */
+  --color-bg-base:               #FFFFFF;
+  --color-bg-container:          #FFFFFF;
+  --color-bg-container-disabled: rgba(0, 0, 0, 0.04);
+  --color-bg-elevated:           #FFFFFF;
+  --color-bg-layout:             #F5F5F5;
+  --color-bg-spotlight:          rgba(0, 0, 0, 0.85);
+  --color-bg-mask:               rgba(0, 0, 0, 0.45);
+
+  /* 9. 边框 */
+  --color-border:                #D9D9D9;
+  --color-border-secondary:      #F0F0F0;
+
+  /* 10. 填充 */
+  --color-fill:                  rgba(0, 0, 0, 0.15);
+  --color-fill-secondary:        rgba(0, 0, 0, 0.06);
+  --color-fill-tertiary:         rgba(0, 0, 0, 0.04);
+  --color-fill-quaternary:       rgba(0, 0, 0, 0.02);
+}
+
+/* theme.css (dark) */
 [data-theme="dark"] {
-  --color-bg-primary:    var(--color-neutral-900);
-  --color-bg-secondary:  var(--color-neutral-800);
-  --color-bg-elevated:   var(--color-neutral-700);
-  --color-bg-hover:      var(--color-neutral-700);
+  --color-text-base:             #FFFFFF;
+  --color-text:                  rgba(255, 255, 255, 0.85);
+  --color-text-secondary:        rgba(255, 255, 255, 0.65);
+  --color-text-tertiary:         rgba(255, 255, 255, 0.45);
+  --color-bg-base:               #141414;
+  --color-bg-container:          #1F1F1F;
+  --color-bg-layout:             #000000;
+  --color-border:                #424242;
+  --color-border-secondary:      #303030;
+  --color-mask:                  rgba(0, 0, 0, 0.65);
+  /* 主色不变, 但 -1..-5 变深, -7..-10 变浅 — 由 color-mix 推 */
+}
+```
 
-  /* 暗色下保持 5 级对比阶梯, 但颜色明度反转:
-     primary(最亮) > regular > secondary > placeholder > disabled(最暗) */
-  --color-text-primary:     var(--color-neutral-50);
-  --color-text-regular:     var(--color-neutral-300);
-  --color-text-secondary:   var(--color-neutral-400);
-  --color-text-placeholder: var(--color-neutral-500);
-  --color-text-disabled:    var(--color-neutral-600);
-  --color-text-inverse:     var(--color-neutral-900);
+**Override via ConfigProvider** (AntD v5 idiomatic way):
+```jsx
+import { ConfigProvider, theme } from 'antd';
+import { useToken } from './ui-theme/tokens/theme.css';  /* our CSS tokens */
 
-  --color-border-default:   var(--color-neutral-700);
-  --color-border-strong:    var(--color-neutral-600);
-  --color-border-focus:     var(--color-primary-500);
-  --color-border-focus-soft: color-mix(in srgb, var(--color-primary-500) 32%, transparent);
+<ConfigProvider theme={{
+  token: {
+    colorPrimary:   'var(--color-primary)',
+    colorSuccess:   'var(--color-success)',
+    colorError:     'var(--color-error)',
+    colorWarning:   'var(--color-warning)',
+    colorInfo:      'var(--color-info)',
+    colorLink:      'var(--color-link)',
+    colorTextBase:  'var(--color-text-base)',
+    colorBgBase:    'var(--color-bg-base)',
+    colorBorder:    'var(--color-border)',
+    borderRadius:   6,            /* design value */
+    fontSize:       14,            /* design value */
+  },
+  algorithm: theme.defaultAlgorithm,  /* or theme.darkAlgorithm */
+}}>
+  <App />
+</ConfigProvider>
+```
+
+**Override via CSS variables** (AntD v5.12+ with `cssVar: true`):
+```jsx
+<ConfigProvider theme={{ cssVar: true, hashed: false, token: { ... } }}>
+```
+Then in CSS:
+```css
+:root {
+  --ant-color-primary: var(--color-primary);
+  --ant-color-text:   var(--color-text);
+  /* ... */
+}
+```
+
+### 2.3 AntD non-color tokens
+
+```css
+:root {
+  /* 字体 */
+  --font-family:        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-code:   'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  --font-size:          14px;
+
+  /* 圆角 (AntD 用 borderRadius, 单一值) */
+  --border-radius:     6px;
+
+  /* 线 */
+  --line-width:         1px;
+  --line-type:          solid;
+
+  /* 尺寸 */
+  --size-unit:          4;
+  --size-step:          4;
+  --size-popup-arrow:   16px;
+  --control-height:     32px;
+
+  /* Z-index */
+  --z-index-base:       0;
+  --z-index-popup-base: 1000;
+
+  /* 透明度 */
+  --opacity-image:      1;
+
+  /* 动效 */
+  --motion-unit:        0.1s;     /* 100ms */
+  --motion-base:        0;        /* base offset */
 }
 ```
 
 ---
 
-## 2. `typography.css`
+## 3. 中创 fork token template
 
-### Families (cannot be derived — must be specified)
+> **中创 fork = Element Plus 2.4 + extensions**. The base token structure is identical
+> to § 1 (Element Plus). The fork adds 4 SCSS files (`_avatar.scss`, `_message.scss`,
+> `_popconfirm.scss`, `_tooltip.scss`) that introduce `--cv-*` variables and override
+> some `--el-*` variables.
+
+### 3.1 Inherited from Element Plus 2.4
+
+All § 1 variables apply unchanged. Token template file `theme.css` is **the same** as EP.
+
+### 3.2 中创-specific extensions (`--cv-*`)
+
+The 中创 SCSS patches introduce these additional variables. **All of them are filled by
+the same `--color-*` tokens from § 1**, no new tokens are needed:
+
+| SCSS file              | Variable                       | Maps to (from § 1)                |
+|------------------------|--------------------------------|------------------------------------|
+| `_avatar.scss`         | `--cv-avatar-text-color`       | `--color-text-regular`             |
+| `_message.scss`        | `--cv-message-bg-color`        | `--el-message-bg-color` (default)  |
+| `_popconfirm.scss`     | `--cv-popconfirm-bg-color`     | `--el-popconfirm-bg-color` (default) |
+| `_tooltip.scss`        | `--cv-tooltip-text-color`      | `--el-text-color-primary` (inverted)|
+
+**These are not new colors** — they are the same colors as their `--el-*` counterparts,
+just named with the `cv-` prefix for component-specific override. The override file
+re-maps them to the same `--color-*` tokens.
+
+### 3.3 中创 override file shape
 
 ```css
+/* overrides/zhongchuang-theme-override.css */
+
+/* 1. Inherit ALL Element Plus overrides from § 1.2 */
+@import './element-plus-theme-override.css';   /* or copy the rules here */
+
+/* 2. + 中创-specific --cv-* routing */
 :root {
-  --font-family-heading: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-family-body:    'Inter', system-ui, -apple-system, sans-serif;
-  --font-family-mono:    'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  --cv-avatar-text-color:     var(--color-text-regular);
+  --cv-message-bg-color:      var(--el-message-bg-color);
+  --cv-popconfirm-bg-color:   var(--el-popconfirm-bg-color);
+  --cv-tooltip-text-color:    var(--el-text-color-primary);
+}
+
+html.dark {
+  --cv-avatar-text-color:     var(--color-text-regular);
+  --cv-message-bg-color:      var(--el-message-bg-color);
+  --cv-popconfirm-bg-color:   var(--el-popconfirm-bg-color);
+  --cv-tooltip-text-color:    var(--el-text-color-primary);
 }
 ```
 
-### Type Scale — derived from base + ratio (geometric progression)
-
-```css
-:root {
-  /* 🔑 ANCHORS — pick base from design, pick ratio for personality */
-  --font-size-base:  16px;     /* body text size from design */
-  --font-size-ratio: 1.25;     /* major third (Material); try 1.125/1.333/1.5 */
-
-  --font-size-xs:   calc(var(--font-size-base) / var(--font-size-ratio) / var(--font-size-ratio));   /* 10.24px */
-  --font-size-sm:   calc(var(--font-size-base) / var(--font-size-ratio));                            /* 12.8px  */
-  --font-size-md:   var(--font-size-base);                                                           /* 16px    */
-  --font-size-lg:   calc(var(--font-size-base) * var(--font-size-ratio));                            /* 20px    */
-  --font-size-xl:   calc(var(--font-size-base) * var(--font-size-ratio) * var(--font-size-ratio));   /* 25px    */
-  --font-size-2xl:  calc(var(--font-size-base) * var(--font-size-ratio) * var(--font-size-ratio) * var(--font-size-ratio)); /* 31.25px */
-  --font-size-3xl:  calc(var(--font-size-base) * pow(var(--font-size-ratio), 4));                     /* 39.06px */
-  --font-size-4xl:  calc(var(--font-size-base) * pow(var(--font-size-ratio), 5));                     /* 48.83px */
-  --font-size-5xl:  calc(var(--font-size-base) * pow(var(--font-size-ratio), 6));                     /* 61.04px */
-  --font-size-6xl:  calc(var(--font-size-base) * pow(var(--font-size-ratio), 7));                     /* 76.3px  */
-}
-```
-
-**When the design gives explicit sizes** (e.g., "h1 is 32px, body is 14px"), use
-those as the source of truth and **overwrite** the derived values — don't force
-the math to match.
-
-### Weights (cannot be derived — industry fixed 4 values)
-
-```css
-:root {
-  --font-weight-regular:   400;
-  --font-weight-medium:    500;
-  --font-weight-semibold:  600;
-  --font-weight-bold:      700;
-}
-```
-
-### Line Heights (derive from base, or specify 3 fixed values)
-
-```css
-:root {
-  --line-height-base: 1.5;        /* 🔑 ANCHOR */
-
-  --line-height-tight:   1.2;                       /* headings */
-  --line-height-normal:  var(--line-height-base);   /* body */
-  --line-height-relaxed: calc(var(--line-height-base) + 0.25);  /* 1.75 */
-}
-```
-
-### Letter Spacing (3 fixed values, tied to size)
-
-```css
-:root {
-  --letter-spacing-tight:  -0.02em;  /* display sizes (5xl+) */
-  --letter-spacing-normal: 0;
-  --letter-spacing-wide:   0.05em;   /* labels / uppercase */
-}
-```
-
-### Component Mapping (consume primitives)
-
-```css
-:root {
-  --text-heading-1: var(--font-size-4xl) / var(--line-height-tight) var(--font-family-heading);
-  --text-heading-2: var(--font-size-3xl) / var(--line-height-tight) var(--font-family-heading);
-  --text-heading-3: var(--font-size-2xl) / var(--line-height-tight) var(--font-family-heading);
-  --text-body-lg:   var(--font-size-lg)   / var(--line-height-normal) var(--font-family-body);
-  --text-body:      var(--font-size-md)   / var(--line-height-normal) var(--font-family-body);
-  --text-body-sm:   var(--font-size-sm)   / var(--line-height-normal) var(--font-family-body);
-  --text-caption:   var(--font-size-xs)   / var(--line-height-normal) var(--font-family-body);
-}
-```
+> **Important**: The 中创 SCSS patches (`resources/zhongchuang/_*.scss`) are the
+> authoritative source for the cv- extension variable names. **Do not modify these files.**
+> If a new release adds new --cv- variables, extend the table above before generating tokens.
 
 ---
 
-## 3. `spacing.css`
+## 4. Color derivation recipes (recap)
 
-### Spacing Scale — derived from a single base unit (linear)
+When the design source gives you **fewer stops than the lib needs**, derive the rest.
+See § 0.5 for the mixing math.
 
-```css
-:root {
-  /* 🔑 ANCHOR — pick 4 (compact/Material) or 8 (default/Bootstrap) */
-  --space-base: 4px;
+| Lib           | Anchor (from design) | Derive                       |
+|---------------|----------------------|------------------------------|
+| Element Plus  | `base` (500)         | `light-3/5/7/8/9` + `dark-2` |
+| Ant Design    | `color-X` (6 stop)   | `color-X-1/2/3/4/5/7/8/9/10` |
+| 中创 fork     | (same as EP)         | (same as EP)                 |
 
-  --space-0:   0;
-  --space-1:   calc(var(--space-base) * 1);    /*  4px */
-  --space-2:   calc(var(--space-base) * 2);    /*  8px */
-  --space-3:   calc(var(--space-base) * 3);    /* 12px */
-  --space-4:   calc(var(--space-base) * 4);    /* 16px */
-  --space-5:   calc(var(--space-base) * 5);    /* 20px */
-  --space-6:   calc(var(--space-base) * 6);    /* 24px */
-  --space-8:   calc(var(--space-base) * 8);    /* 32px */
-  --space-10:  calc(var(--space-base) * 10);   /* 40px */
-  --space-12:  calc(var(--space-base) * 12);   /* 48px */
-  --space-16:  calc(var(--space-base) * 16);   /* 64px */
-  --space-20:  calc(var(--space-base) * 20);   /* 80px */
-  --space-24:  calc(var(--space-base) * 24);   /* 96px */
-}
-```
+When the design gives you **all stops explicitly** (rare), use them as-is — no derivation.
+When the design gives you **only a "hover" variant** but no base, treat hover as 600 / dark-2
+and derive the rest.
 
-**Change `--space-base: 4px` → `--space-base: 8px` and the whole scale doubles.**
-This makes "tighter" or "looser" spacing a one-line change.
+### 4.1 Lightness/contrast principles
 
-**Common base choices**:
-- `4px` → Material Design, compact, dense data tables
-- `8px` → Bootstrap, Tailwind default, balanced
-- `4px` (with 1.5x intermediate steps) → Modern iOS-style density
+- Lighter stops (light-3/5/7/8/9) = mix with white → backgrounds, hover washes, disabled text.
+- Darker stops (dark-2) = mix with black → hover/active states, high-contrast text.
+- The ratio between adjacent stops should look perceptually uniform — see the percentages
+  in § 0.5. If two adjacent stops look identical, the percentage is too small; if the
+  jump looks too big, the percentage is too large.
+- The 500 stop (base) is the **brand-defining** color. It should be the most saturated,
+  most distinctive stop in the scale. Don't make 500 too close to neutral.
 
-### Semantic Spacing (consume from scale)
+### 4.2 Dark mode inversion
 
-```css
-:root {
-  --space-component-padding-sm: var(--space-2);
-  --space-component-padding-md: var(--space-4);
-  --space-component-padding-lg: var(--space-6);
+For **dark mode**, the scale **flips**: dark-2 becomes the new "base-ish" stop, and the
+light-3/5/7/8/9 become darker. AntD's `darkAlgorithm` does this for you. Element Plus
+and 中创 require manual inversion (the dump in `node_modules/element-plus/theme-chalk/dark/css-vars.css`
+shows the canonical dark values for 2.4.x).
 
-  --space-section-gap-sm:       var(--space-6);
-  --space-section-gap-md:       var(--space-12);
-  --space-section-gap-lg:       var(--space-16);
-}
-```
+**Recommended approach**: Don't try to derive dark mode from light mode with a formula.
+**Read the EP dark CSS dump** and use those values as the dark mode anchors. This guarantees
+the result matches EP's tested dark theme.
 
 ---
 
-## 4. `radius.css`
+## 5. `typography.css` (lib-agnostic)
 
-### Radius Scale — derived from a single base unit (multiplicative)
+Typography is more standard across libs. We define a single token file, then route per lib.
 
 ```css
 :root {
-  /* 🔑 ANCHOR — pick the personality of the design */
-  --radius-base: 6px;   /* try 2 (sharp) / 4 (default) / 6 (rounded) / 12 (iOS-style) */
+  /* 字体家族 (3 套, 不可推导 — 必须在设计稿里有) */
+  --font-family-base:    'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  --font-family-heading: var(--font-family-base);
+  --font-family-mono:    'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
+  /* 字号梯度 (设计稿给 base, 比例 1.250 派生) */
+  --font-size-3xs: 11px;   /* base / 1.25^2 */
+  --font-size-2xs: 12px;
+  --font-size-xs:  13px;
+  --font-size-sm:  14px;   /* base */
+  --font-size-md:  16px;   /* base * 1.143 */
+  --font-size-lg:  18px;
+  --font-size-xl:  20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 36px;
+
+  /* 字重 (4 档, 行业固定) */
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* 行高 */
+  --line-height-tight:   1.25;
+  --line-height-base:    1.5;
+  --line-height-loose:   1.75;
+
+  /* 字间距 */
+  --letter-spacing-tight: -0.01em;
+  --letter-spacing-base:  0;
+  --letter-spacing-loose: 0.05em;
+}
+```
+
+**Override target per lib**:
+- Element Plus: `--el-font-family` / `--el-font-size-{xs,sm,base,md,lg,xl}` / `--el-font-weight-primary` / `--el-font-line-height-primary`
+- Ant Design: `fontFamily` / `fontFamilyCode` / `fontSize` (inside ConfigProvider `theme.token`)
+- 中创 fork: same as Element Plus
+
+---
+
+## 6. `spacing.css` (lib-agnostic)
+
+```css
+:root {
+  /* 基础单位 (设计稿给一个值, 派生 7 档) */
+  --space-3xs: 2px;     /* base / 4 */
+  --space-2xs: 4px;     /* base / 2 */
+  --space-xs:  8px;     /* base */
+  --space-sm:  12px;
+  --space-md:  16px;    /* base * 2 */
+  --space-lg:  24px;    /* base * 3 */
+  --space-xl:  32px;    /* base * 4 */
+  --space-2xl: 48px;    /* base * 6 */
+  --space-3xl: 64px;    /* base * 8 */
+
+  /* 组件内边距 (基于 size-md) */
+  --space-component-padding-sm:  var(--space-xs);
+  --space-component-padding-md:  var(--space-sm);
+  --space-component-padding-lg:  var(--space-md);
+
+  /* 组件间距 (基于 size-md) */
+  --space-component-gap-sm:  var(--space-xs);
+  --space-component-gap-md:  var(--space-sm);
+  --space-component-gap-lg:  var(--space-md);
+}
+```
+
+EP / 中创 / AntD each have their own component-size variables, but the underlying spacing
+scale is shared. Override routes are minimal (most components use the scale directly).
+
+---
+
+## 7. `radius.css` / `border.css` / `motion.css` / `theme.css`
+
+### 7.1 `radius.css`
+
+```css
+:root {
   --radius-none: 0;
-  --radius-sm:   var(--radius-base);                     /*  6px */
-  --radius-md:   calc(var(--radius-base) * 1.5);         /*  9px */
-  --radius-lg:   calc(var(--radius-base) * 2);           /* 12px */
-  --radius-xl:   calc(var(--radius-base) * 3);           /* 18px */
-  --radius-2xl:  calc(var(--radius-base) * 4);           /* 24px */
-  --radius-full: 9999px;                                 /* independent — pills / avatars */
+  --radius-sm:   2px;
+  --radius-md:   4px;     /* anchor */
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-full: 9999px;
 }
 ```
 
-**Change `--radius-base: 6px` → `--radius-base: 12px` and the whole scale gets
-"softer".** This is how the "iOS-style" / "Material" / "shadcn" personality is
-captured in one variable.
+Override: EP uses `--el-border-radius-{base,small,round,circle}`. AntD uses `borderRadius`
+(single value, applied as the default for all components via `theme.algorithm` or
+`theme.components.Button.borderRadius`).
 
-**Personality presets**:
-- `2px` → Material Design 2 (sharp, professional)
-- `4px` → shadcn / Linear (subtle rounding)
-- `6px` → Tailwind default (balanced)
-- `12px` → iOS / Stripe / Modern SaaS (soft)
-- `16px` → Extra-soft / Notion-style (pillowy)
-
----
-
-## 5. `border.css`
-
-### Border Width — derived from base (almost always 1px)
+### 7.2 `border.css`
 
 ```css
 :root {
-  --border-width-base: 1px;   /* 🔑 ANCHOR — almost always 1 */
-
-  --border-width-none:    0;
-  --border-width-default: var(--border-width-base);                /* 1px */
-  --border-width-strong:  calc(var(--border-width-base) * 2);      /* 2px */
-  --border-width-heavy:   calc(var(--border-width-base) * 3);      /* 3px */
-}
-
-:root {
-  --border-style-default: solid;    /* most use cases */
-  --border-style-subtle:  dashed;   /* less common */
+  --border-width-thin:  1px;
+  --border-width-base:  1px;
+  --border-width-thick: 2px;
+  --border-style:       solid;
+  --border-color:       var(--color-border-default);
 }
 ```
 
----
-
-## 6. `motion.css`
-
-### Duration — derived from base (single anchor + ratio)
+### 7.3 `motion.css`
 
 ```css
 :root {
-  /* 🔑 ANCHOR — pick the brand tempo */
-  --motion-duration-base: 200ms;   /* try 150 (snappy) / 200 (default) / 300 (leisurely) */
-
-  --motion-duration-instant: calc(var(--motion-duration-base) * 0.5);   /* 100ms */
-  --motion-duration-fast:    calc(var(--motion-duration-base) * 0.75);  /* 150ms */
-  --motion-duration-normal:  var(--motion-duration-base);               /* 200ms */
-  --motion-duration-slow:    calc(var(--motion-duration-base) * 1.5);    /* 300ms */
-  --motion-duration-slower:  calc(var(--motion-duration-base) * 2.5);    /* 500ms */
+  --motion-duration-instant: 0.1s;
+  --motion-duration-fast:    0.2s;   /* EP default */
+  --motion-duration-base:    0.3s;   /* EP default */
+  --motion-duration-slow:    0.5s;
+  --motion-ease-standard:    cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-decelerate:  cubic-bezier(0, 0, 0.2, 1);
+  --motion-ease-accelerate:  cubic-bezier(0.4, 0, 1, 1);
 }
 ```
 
-### Easing (cannot be derived — 3 industry-standard curves)
+EP override: `--el-transition-duration` / `--el-transition-duration-fast` /
+`--el-transition-function-{ease-in-out-bezier,fast-bezier}`.
+
+### 7.4 `theme.css` (entry point)
 
 ```css
-:root {
-  --motion-easing-standard:  cubic-bezier(0.4, 0, 0.2, 1);   /* Material standard — most uses */
-  --motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1);     /* entering — ease-out */
-  --motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);     /* leaving — ease-in */
-  --motion-easing-emphasis:  cubic-bezier(0.2, 0, 0, 1);      /* strong entrance / exit */
-  --motion-easing-spring:    cubic-bezier(0.34, 1.56, 0.64, 1); /* iOS-style overshoot */
-}
-```
-
----
-
-## 7. `theme.css` (entry point)
-
-```css
-/* 1. Import tokens in this exact order */
+/* Import order matters: primitives first, then semantic */
 @import './colors.css';
 @import './typography.css';
 @import './spacing.css';
@@ -606,49 +769,32 @@ captured in one variable.
 @import './border.css';
 @import './motion.css';
 
-/* 2. Component tokens (consume primitives) */
-:root {
-  --button-padding-y:  var(--space-2);
-  --button-padding-x:  var(--space-4);
-  --button-radius:     var(--radius-md);
-  --button-bg:         var(--color-primary-500);
-  --button-text:       var(--color-text-inverse);
-
-  --input-padding-y:   var(--space-2);
-  --input-padding-x:   var(--space-3);
-  --input-radius:      var(--radius-md);
-  --input-border:      var(--color-border-default);
-  --input-bg:          var(--color-bg-elevated);
-
-  --card-padding:      var(--space-6);
-  --card-radius:       var(--radius-lg);
-  --card-shadow:       var(--shadow-sm);
-  --card-bg:           var(--color-bg-elevated);
-  --card-border:       var(--color-border-default);
-}
-
-/* 3. Shadow tokens (cannot be cleanly derived — use a small fixed set) */
-:root {
-  --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md:      0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-lg:      0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-overlay: 0 25px 50px rgba(0, 0, 0, 0.15);
-}
+html.dark { @import './colors.css'; /* dark mode overrides */ }
 ```
 
 ---
 
-## Validation Rules
+## 8. Validation rules
 
-When validating generated tokens, check:
+A generated token set passes the validation check only if:
 
-1. **All 7 files exist** and `theme.css` imports the other 6 in order.
-2. **No token is defined twice** in different files.
-3. **Dark mode variant exists** for every semantic color.
-4. **Scale is complete** — every color scale has 50 → 900.
-5. **No raw values in component files** — only `var(--*)` references.
-6. **Type scale is geometric** — each step is `--font-size-ratio` from the previous.
-7. **Spacing is base-derived** — every `space-*` is `calc(var(--space-base) * N)`.
-8. **Radius is base-derived** — every `radius-*` is `calc(var(--radius-base) * M)` (except `--radius-full`).
-9. **Anchors are explicit** — `--color-primary-500`, `--space-base`, `--radius-base`, `--font-size-base`/`--font-size-ratio`, `--border-width-base`, `--motion-duration-base` are all defined in `:root`.
-10. **Derivable categories use formulas, not hand-picked values** — re-deriving by changing an anchor should affect the right stops.
+1. **Every variable in the lib's CSS dump is either**:
+   - Defined in the project's token file, OR
+   - Mapped to a `--color-*` token in the override file, OR
+   - Left as the lib's default (only acceptable for variables not part of the design).
+
+2. **No variable in the token file references a name that doesn't exist in the lib's dump**.
+   E.g. don't define `--color-primary-foo` if EP doesn't have a `--el-color-primary-foo`.
+
+3. **The lib name in the override file matches the lib actually installed** in the project.
+   Run `node -p "require('./package.json').dependencies?.['element-plus']"` to confirm.
+
+4. **Dark mode is defined for every variable** that has a light mode definition. EP's
+   dark mode is structurally symmetric to light mode — every `--el-color-primary` has a
+   dark counterpart, no extra "dark-only" variables.
+
+5. **The 3-step workflow (§ 0.4) was followed**: auto-detect → dump → pick template.
+   Do not skip the dump step. Do not invent variables from memory.
+
+See `references/system-prompt.md` for the audit table that the agent must fill out
+before claiming a token set is complete.

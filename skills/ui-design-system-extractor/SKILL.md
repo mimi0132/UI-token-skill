@@ -1,6 +1,6 @@
 ---
 name: "ui-design-system-extractor"
-description: "Extracts visual design tokens (colors, typography, spacing, radius, shadow, border, motion, grid, container, breakpoint, icon-size, focus-ring, font-family, font-weight, easing) from a design source (Figma / image / hand-written tokens), then generates a single CSS override file that maps those tokens onto an existing component library's CSS variables (Element Plus / Ant Design / Naive UI / shadcn / MUI / Chakra / Vuetify / 中创 fork) to re-skin the existing library without changing any component code. Invoke when user has an existing component library and wants to change only its visual style to match a new design."
+description: "Extracts visual design tokens (colors, typography, spacing, radius, shadow, border, motion, grid, container, breakpoint, icon-size, focus-ring, font-family, font-weight, easing) from a design source (Figma / image / hand-written tokens), then generates a single CSS override file that maps those tokens onto an existing component library's CSS variables (Element Plus 2.4 / Ant Design v5 / 中创 fork) to re-skin the existing library without changing any component code. Invoke when user has an existing component library and wants to change only its visual style to match a new design. Supports exactly 3 libraries: Element Plus 2.4, Ant Design v5, 中创 fork (a fork of Element Plus). Other libs (shadcn, Naive UI, MUI, Chakra, Vuetify) are NOT supported — add support in override-patterns.md first."
 ---
 
 # UI Design System Extractor — Theme Override
@@ -54,7 +54,7 @@ Read https://raw.githubusercontent.com/mimi0132/UI-token-skill/main/skills/ui-de
 | 输出预览页 (用户先看效果) | 强制选某个组件库 |
 | 1 行 import 集成 + 1 行暗色模式切换 | 硬编码 hex / 像素值填 40+ 个变量(用推导代替) |
 
-**关键判断**: 用户必须已经有一个正在使用的组件库。如果用户说「我项目里用的 Element Plus」 / 「我装的是 shadcn」 / 「基于 Ant Design」,这个 skill 适用。如果用户从零开始,这个 skill 不适用(改用通用 UI 组件生成 skill)。
+**关键判断**: 用户必须已经有一个正在使用的组件库,且该组件库必须是本 skill 支持的 3 个之一(Element Plus 2.4 / Ant Design v5 / 中创 fork)。如果用户说「我项目里用的 Element Plus」 / 「公司用的是中创」 / 「React 项目用 Ant Design」,这个 skill 适用。如果用户说「我用的是 shadcn / Naive UI / MUI / Chakra / Vuetify」,**不适用**——告知用户并建议换库或扩展 skill。如果用户从零开始,这个 skill 不适用(改用通用 UI 组件生成 skill)。
 
 ### 保留 vs 替换的边界
 
@@ -116,53 +116,99 @@ Do NOT invoke when:
 
 ## 4. Workflow
 
-### Step 0 — Clarify (CHECKPOINT, 必问)
+### Step 0 — Auto-Detect Target Library (mandatory, no asking)
 
-问用户 **3 件事** (用 AskUserQuestion 一次问完):
+> **The user may not know the version. The user may not know the precise lib name.
+> That's fine. This step auto-detects from `package.json` / `node_modules` and refuses
+> to start if the project uses a lib this skill does not support.**
 
-1. **现有组件库**? (Element Plus / Ant Design / shadcn / Naive UI / MUI / Chakra / Vuetify / 中创 fork / 其他)
-2. **设计源**? (Figma URL / 本地图片 / 手写 tokens 路径)
-3. **覆盖范围**? 
-   - 完整换肤 (颜色 + 字体 + 间距 + 圆角 + 阴影)
-   - 只换颜色
-   - 自定义 (用户指定)
+**Supported libraries** (3 only):
 
-如果用户没说现有库,**必须先问**,不要假设。
+| Library              | CSS variable prefix | Color structure                              |
+|----------------------|---------------------|----------------------------------------------|
+| **Element Plus 2.4** | `--el-`             | 7-stop scale `base / light-3/5/7/8/9 / dark-2` |
+| **Ant Design v5**    | `--ant-` + token    | 10-stop scale `1..10` (CSS-in-JS, ConfigProvider) |
+| **中创 fork**         | `--el-` + `--cv-`   | Inherits EP 2.4 + `--cv-*` extensions         |
+
+**Detection script** (run in project root, before any other work):
+
+```bash
+node -e "
+const p = require('./package.json');
+const all = { ...p.dependencies, ...p.devDependencies };
+const out = {
+  'element-plus': all['element-plus'],
+  'antd':         all['antd'],
+  'naive-ui':     all['naive-ui'],
+  '@shadcn/ui':   all['@shadcn/ui'],
+  'tailwindcss':  all['tailwindcss'],
+  'vuetify':      all['vuetify'],
+  '@mui/material': all['@mui/material'],
+};
+console.log(JSON.stringify(out, null, 2));
+"
+# Then check for --cv- markers to detect 中创 fork:
+grep -rh -- '--cv-' node_modules/element-plus/lib/theme-chalk/*.scss 2>/dev/null | head -3
+```
+
+**Classification rules**:
+
+| Detected                                  | Action                              |
+|-------------------------------------------|-------------------------------------|
+| `element-plus` + NO `cv-` markers         | Vanilla Element Plus → use § 1 template |
+| `element-plus` + `cv-` markers in scss    | 中创 fork → use § 3 template         |
+| `antd` ≥ 5.0                              | Ant Design v5 → use § 2 template     |
+| `antd` < 5.0                              | **STOP**, ask user to upgrade to v5  |
+| Multiple libs                             | **STOP**, ask user which to target   |
+| None of the 3 supported                   | **STOP**, tell user what's supported |
+
+**Then ask the user 2 things** (use AskUserQuestion):
+
+1. **Design source**? (Figma URL / local image / hand-written tokens path)
+2. **Coverage scope**?
+   - Complete re-skin (colors + font + spacing + radius + shadow)
+   - Colors only
+   - Custom (user specifies)
+
+**Do NOT ask which lib** — that's already auto-detected. **Do NOT ask the version** —
+read it from package.json. The user is presumed to be a non-designer; technical
+details are the agent's job.
 
 ### Step 1 — Extract Design Tokens
 
-从设计源提取 7 类 token,输出到 `tokens/` 目录的 7 个独立文件。
+**Per-lib token structure** (use the lib template from `references/token-spec.md`):
 
-完整 token 规范见 [references/token-spec.md](references/token-spec.md)。
+- **EP / 中创**: 7-stop scale `base / light-3/5/7/8/9 / dark-2` per color role (primary, success, warning, danger, info, neutral).
+- **AntD**: 10-stop scale `1..10` per color role, fed to `<ConfigProvider theme={{ token }}>`.
 
-**7 个文件固定顺序与职责**:
+**7 token files** (same files for all libs, contents differ per lib):
 
-| # | 文件 | 包含 |
-|---|------|------|
-| 1 | `tokens/theme.css` | 入口,`@import` 其他 6 个,定义组件层 token (`--button-bg` 等) |
-| 2 | `tokens/colors.css` | primary/neutral/semantic 色阶 (50-900),语义色,暗色映射 |
-| 3 | `tokens/typography.css` | 字体家族、字号 (xs-4xl)、字重、行高、字间距 |
-| 4 | `tokens/spacing.css` | 4px 基准间距 (0-24),语义间距 |
-| 5 | `tokens/radius.css` | 圆角 (none/sm/md/lg/xl/2xl/full) |
-| 6 | `tokens/border.css` | 边框宽度 (none/default/strong/heavy)、边框样式 |
-| 7 | `tokens/motion.css` | 动效时长 (instant/fast/normal/slow/slower)、缓动曲线 (standard/decelerate/accelerate/emphasis/spring) |
+| # | File | Contains |
+|---|------|----------|
+| 1 | `tokens/theme.css` | Entry, `@import` other 6, define component-layer tokens (`--button-bg` etc.) |
+| 2 | `tokens/colors.css` | Per-role color scale (EP: 7 stops, AntD: 10 stops), semantic text/bg/border, dark mode mapping |
+| 3 | `tokens/typography.css` | Font family, size (xs-4xl), weight, line height |
+| 4 | `tokens/spacing.css` | 4px base (0-24) |
+| 5 | `tokens/radius.css` | radius (none/sm/md/lg/xl/2xl/full) |
+| 6 | `tokens/border.css` | Border width (none/default/strong/heavy), style |
+| 7 | `tokens/motion.css` | Duration (instant/fast/normal/slow/slower), easing (standard/decelerate/accelerate/emphasis/spring) |
 
-> **注**: 栅格 (grid columns/gutter)、容器 (max-width/padding)、断点 (xs-2xl)、图标尺寸 (sm/md/lg)、焦点环 (color/width) 这 5 类**布局/装饰类**变量,因组件库差异大 (Element Plus / Ant Design / shadcn / MUI 命名完全不同),**不抽到独立 token 文件**,而是直接在 `overrides/<lib>-theme-override.css` 中按库映射,详见 [references/override-patterns.md](references/override-patterns.md)。
+> **Note**: Grid columns/gutter, container max-width/padding, breakpoint, icon size, focus ring are **NOT** extracted to token files. They're hard-coded per-lib in `overrides/<lib>-theme-override.css` (see [references/override-patterns.md](references/override-patterns.md)), because the names differ across libs.
 
-**输入 → 输出映射**:
+**Input → output mapping**:
 
-| 设计源 | 怎么提取 |
-|--------|---------|
-| Figma URL | `mcp_Figma_AI_Bridge.get_figma_data` → 见 [references/figma-extraction.md](references/figma-extraction.md) |
-| 本地图片 | Agent 视觉分析,识别主色/字体/圆角/阴影,询问用户确认 |
-| 手写 tokens | `Read` 文件,直接解析为 CSS 变量 |
+| Design source | How to extract |
+|---------------|----------------|
+| Figma URL | `mcp_Figma_AI_Bridge.get_figma_data` → see [references/figma-extraction.md](references/figma-extraction.md) |
+| Local image | Agent visual analysis, identify main color / font / radius / shadow, ask user to confirm |
+| Hand-written tokens | `Read` file, parse directly into CSS variables |
 
-**提取规则**:
-- **颜色**: 主色 (primary) 必须有完整 50-900 色阶。可以用 `color-mix(in srgb, var(--color-primary-500) X%, white/black)` 推导其他档。
-- **字体**: 字号梯度按 1.125x-1.25x 几何增长。识别 body / heading / mono 三族。
-- **圆角**: 至少识别 sm / md / lg / full 四档。
-- **阴影**: 至少 sm / md / lg / overlay 四档。
-- **间距**: 4px 基准。如果设计稿不规则,按 4 对齐。
+**Extraction rules**:
+- **Colors**: anchor = `base` (EP) or `6` (AntD), derive the rest with `color-mix(in srgb, var(--anchor) X%, white/black)`. Do not hand-pick 7 or 10 hex values per role.
+- **Font**: size scale grows by 1.125x-1.25x. Identify body / heading / mono 3 families.
+- **Radius**: identify sm / md / lg / full at minimum.
+- **Shadow**: sm / md / lg / overlay at minimum.
+- **Spacing**: 4px base. Round design values to multiples of 4.
 
 ### Step 2 — Generate Override File (核心)
 
@@ -378,28 +424,27 @@ Action:
 4. **Preview**: `preview/comprehensive-preview.html` 用 CDN 引 `element-plus`,展示 Category 0 色系 6 子块 + 50+ 组件
 5. **Document**: README 给 3 行 import
 
-### Example 2 — shadcn/ui 换肤
+### Example 2 — 中创组件库换肤
 
-User: "项目里是 shadcn/ui + Tailwind, 给了个设计稿, 改一下风格, 不要重写组件"
+User: "公司用的是中创组件库(EP fork), 给了个设计稿, 改一下风格, 不要重写组件"
 
 Action:
-1. **Clarify**: 库 = shadcn/ui, 源 = 图片
+1. **Detect**: 读 `package.json` 发现 `element-plus` 存在; grep 项目内 scss 发现 `--cv-*` markers → 判定为 **中创 fork**
 2. **Extract**: 视觉分析 → 7 个 token
-3. **Override**: shadcn 用 CSS 变量 (`--background` / `--foreground` / `--primary` 等),生成
-   `shadcn-theme-override.css` + `tailwind.config.js` 调整片段
-4. **Preview**: `preview/comprehensive-preview.html` 展示基础 HTML 元素 (button/input/card) 套上 shadcn tokens 的样子
-5. **Document**: README 解释 shadcn 的 `tailwind.config.js` 集成方式
+3. **Override**: 中创 = EP 2.4 7-stop scale + `--cv-*` 扩展,生成 `zhongchuang-theme-override.css` (中创 section in override-patterns.md)
+4. **Preview**: `preview/comprehensive-preview.html` 展示基础 EP 元素 (el-button / el-input / el-card) 套上中创 tokens 的样子
+5. **Document**: README 给 3 行 import + 中创 `--cv-*` 扩展变量的处理说明
 
-### Example 3 — 只换颜色
+### Example 3 — 只换颜色(Ant Design v5)
 
-User: "我用的是 Naive UI, 只想把颜色换成设计稿这套, 字体圆角保持原样"
+User: "我项目是 React + Ant Design v5, 只想把颜色换成设计稿这套, 字体圆角保持原样"
 
 Action:
-1. **Clarify**: 库 = Naive UI, 范围 = **只换颜色**
-2. **Extract**: 只从设计稿提取颜色,其他 token 沿用 Naive UI 默认
-3. **Override**: 只生成颜色相关的 CSS 变量映射,跳过字体/圆角
+1. **Detect**: 读 `package.json` 发现 `antd` ≥ 5.0 → 判定为 **Ant Design v5**
+2. **Extract**: 只从设计稿提取颜色 token (10-stop scale 1..10),其他 token (font / radius) 沿用 AntD 默认
+3. **Override**: 只生成颜色相关的 token 映射,生成 `antd-theme-override.css` + `<ConfigProvider theme={{ token }}>` 片段
 4. **Preview**: 同样只展示颜色效果
-5. **Document**: README 注明"只改了颜色,其他保持原样"
+5. **Document**: README 注明"只改了颜色,其他保持原样,使用 ConfigProvider 集成"
 
 ### Example 4 — 没有现有库 → 不要用这个 skill
 

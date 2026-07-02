@@ -34,38 +34,81 @@ If any of these is missing, ask. Do not guess.
 
 ## Phase 0: Target Library Discovery (DO THIS FIRST for any lib)
 
-> **Most "my own component library" cases are forks of Element Plus / Ant Design
-> / Naive UI with a different prefix, some variables renamed, others extended.**
-> The first job of this skill is to figure out **what variables the lib actually
-> exposes and uses** — not to assume it's a vanilla Element Plus.
+> **This skill supports exactly 3 component libraries**: Element Plus 2.4, Ant Design v5,
+> and the 中创 fork (a fork of Element Plus). If the project uses anything else
+> (shadcn, Naive UI, MUI, Chakra, Vuetify, etc.), **STOP** and tell the user:
+> "This skill supports Element Plus 2.4, Ant Design v5, and 中创 fork. Your project
+> uses `{detected}`. Add one of the supported libs, or extend this skill."
+>
+> Why we limit: every lib has its own variable structure. Supporting more libs means
+> maintaining 3+ parallel templates, more bugs, and inconsistent results. Better to be
+> excellent at 3 than mediocre at 8.
 
-### Step 1: Find the lib and confirm its lineage
+### Step 1: Auto-detect the lib from package.json (mandatory)
+
+The user may not know the version. The user may not know the lib name precisely. That's
+fine — the agent auto-detects both. **Never ask the user for the version.**
 
 ```bash
-# 1. Find the package
-cat package.json | grep -E '"(@?[a-z0-9-]+/)?[a-z0-9-]+-?ui"|"element-plus"|"antd"|"naive-ui"|"@shadcn/ui"'
-# → e.g. "@my-company/ui": "2.3.1"
+cd /Users/zhaozihan/Desktop/UI-提取- agent  # or wherever the project root is
 
-# 2. Find the dist
-ls node_modules/@my-company/ui/dist/
-# → e.g. dist/index.css, dist/index.esm.js
-
-# 3. Check if it kept the upstream prefix or changed it
-grep -oE '\-\-[a-z0-9-]+' node_modules/@my-company/ui/dist/index.css | head -20
-# → '--el-color-primary' (kept)  OR  '--my-color-primary' (renamed)  OR  mixed
+# Read all relevant deps from package.json in one shot
+node -e "
+const p = require('./package.json');
+const all = { ...p.dependencies, ...p.devDependencies };
+const out = {
+  'element-plus': all['element-plus'],
+  'antd':         all['antd'],
+  'naive-ui':     all['naive-ui'],
+  '@shadcn/ui':   all['@shadcn/ui'],
+  'tailwindcss':  all['tailwindcss'],
+  'vuetify':      all['vuetify'],
+  '@mui/material': all['@mui/material'],
+  '@chakra-ui/react': all['@chakra-ui/react'],
+};
+console.log(JSON.stringify(out, null, 2));
+"
 ```
 
-### Step 2: Dump the full variable list (runtime, source-of-truth)
+Then classify:
 
-Browser DevTools console on a page that uses the lib:
+| Detected                                      | Classification                  | Next step                         |
+|-----------------------------------------------|---------------------------------|-----------------------------------|
+| `element-plus` exists, NO `cv-` in scss       | Vanilla Element Plus            | Use § 1 (EP) template             |
+| `element-plus` exists, `cv-` markers in scss  | 中创 fork                       | Use § 3 (中创) template            |
+| `antd` exists, version ≥ 5.0                  | Ant Design v5                   | Use § 2 (AntD) template           |
+| `antd` exists, version < 5.0                  | Ant Design v4 (legacy)          | **STOP**, ask user to upgrade to v5 |
+| Multiple of above                             | Multi-lib project               | **STOP**, ask user which to target |
+| None of the 3 supported                       | Other / unknown                 | **STOP**, message above           |
+
+To detect the 中创 fork (after element-plus is found):
+
+```bash
+# Check for --cv- variables in compiled CSS, or cv- class names in scss
+grep -rh -- "--cv-" node_modules/element-plus/lib/theme-chalk/*.scss 2>/dev/null | head -3
+grep -rh "cv-avatar\|cv-button\|cv-message\|cv-popconfirm\|cv-tooltip" \
+  node_modules/element-plus/lib/theme-chalk/*.scss 2>/dev/null | head -3
+```
+
+If either returns hits → it's the 中创 fork. Otherwise it's vanilla EP.
+
+> **Why the runtime dump below is no longer the primary source of truth**: For the 3
+> supported libs, we already maintain canonical templates in `token-spec.md` § 1/2/3.
+> The dump is used to **cross-check** the template against the installed version (in
+> case the user has a newer EP, e.g. 2.5, where new variables may have been added).
+
+### Step 2: Cross-check against the installed version (recommended, not blocking)
+
+Use the runtime dump to verify the template is complete. **Do not skip this** if the
+project uses a lib version newer than the one this skill was built for.
 
 ```js
-// 1. All variables defined in :root
+// Browser DevTools console on a page that uses the lib
 const allVars = {}
 for (const sheet of document.styleSheets) {
   try {
     for (const rule of sheet.cssRules) {
-      if (rule.style && (rule.selectorText === ':root' || rule.selectorText === ':host')) {
+      if (rule.style && (rule.selectorText === ':root' || rule.selectorText === ':host' || rule.selectorText === 'html.dark')) {
         for (const prop of rule.style) {
           if (prop.startsWith('--')) allVars[prop] = rule.style.getPropertyValue(prop)
         }
@@ -74,7 +117,6 @@ for (const sheet of document.styleSheets) {
   } catch (e) {}
 }
 
-// 2. Variables actually referenced (var(--xxx) usages)
 const used = new Set()
 for (const sheet of document.styleSheets) {
   try {
@@ -87,17 +129,17 @@ for (const sheet of document.styleSheets) {
 
 console.log('Defined variables:', Object.keys(allVars).length)
 console.log('Referenced variables:', used.size)
-console.log('Intersection (the ones we need to override):', used.size > 0 ? [...used].sort().join('\n') : 'cross-origin stylesheets blocked — fall back to grep')
-
-// 3. Save to clipboard for the agent
-copy([...used].sort().join('\n'))
+console.log('Variables in template but NOT in installed lib (template is too new):',
+  [...used].sort().join('\n'))
 ```
 
-**Save the output.** This is the "manifest" the agent uses to generate the override file.
+**If the installed lib has variables not in the template** (e.g. EP 2.5 added new ones):
+add them to `token-spec.md` § 1 before generating tokens. **Never silently skip them.**
 
-### Step 3: Categorize the variables
+**If the template has variables not in the installed lib**: remove them from the
+generated token file — they'd be dead code.
 
-Group the dumped variables:
+### Step 3: Categorize the variables (informational only)
 
 ```js
 const groups = { color: [], size: [], radius: [], shadow: [], space: [], motion: [], font: [], border: [], other: [] }
@@ -115,58 +157,42 @@ for (const v of used) {
 console.table(Object.fromEntries(Object.entries(groups).map(([k,v]) => [k, v.length])))
 ```
 
-This tells you **how many variables of each type** the lib actually uses — usually
-uneven (40 colors, 12 sizes, 5 shadows, etc.).
+This tells you **how many variables of each type** the lib actually uses — useful for
+sizing the token file before generating.
 
-### Step 4: Map the prefix
+### Step 4: Map the prefix — only 3 cases, no custom mapping needed
 
-| Lib declares variables starting with | Classification                              | Action                                 |
-|--------------------------------------|---------------------------------------------|----------------------------------------|
-| `--el-`                              | Vanilla Element Plus (or unchanged fork)    | Use the existing Element Plus mapping  |
-| `--ant-`                             | Vanilla Ant Design (or unchanged fork)      | Use the existing Ant Design mapping    |
-| `--my-`, `--company-`, `--dc-`, etc. | **Renamed fork**                            | Create a custom mapping (see § 4)       |
-| Mixed (`--el-` and `--my-`)          | Partial fork (kept upstream + added own)    | Map both, prioritize the company's own |
-| Variables defined inline (no `--`)   | SCSS-only lib (Element Plus 1.x, Vuetify)   | Need to either upgrade to v2, or write CSS variable wrappers |
+| Lib declares variables starting with | Classification                  | Template             |
+|--------------------------------------|---------------------------------|----------------------|
+| `--el-`                              | Vanilla Element Plus            | § 1 (EP)             |
+| `--el-` + `--cv-`                    | 中创 fork                       | § 3 (中创)            |
+| `--ant-`                             | Ant Design v5                   | § 2 (AntD)           |
+| `--my-`, `--company-`, `--dc-`, etc. | **Renamed fork of unsupported lib** | **STOP** — not supported |
 
-### Step 5: Create the custom mapping (if fork renamed the prefix)
+The previous version of this skill supported "renamed prefix" (e.g. `--my-color-primary`)
+as a fork of Element Plus. **We removed this support** because the 中创 fork is the
+only known EP fork in our user's portfolio, and supporting arbitrary prefix renames
+doubles the template maintenance cost. If a renamed fork appears, tell the user the
+limitation and offer to add it as a 4th template.
 
-The agent should:
-1. Take the Element Plus mapping from `override-patterns.md` as a template
-2. Replace `--el-` with the new prefix
-3. Verify each rename against the dumped variable list (some vars may be removed, some added)
-4. Generate the override file using the new prefix
+### Step 5: Pick the template, fill it from the design source
 
-**Example**: company lib renamed `--el-color-primary` to `--my-color-brand`:
-
-```js
-// Take this from override-patterns.md
-const elMapping = {
-  '--el-color-primary':           'var(--color-primary-500)',
-  '--el-color-primary-light-3':   'var(--color-primary-400)',
-  // ... 100 more
-}
-
-// Apply a prefix transform
-const prefix = '--my-'
-const myMapping = Object.fromEntries(
-  Object.entries(elMapping).map(([k, v]) => [
-    k.replace(/^--el-/, prefix),
-    v
-  ])
-)
-// → { '--my-color-primary': 'var(--color-primary-500)', ... }
-```
+1. Open `references/token-spec.md`.
+2. For EP / 中创, use § 1 (or § 3 for cv- extensions). For AntD, use § 2.
+3. Fill the template with the colors / sizes / radii / etc. from the design source.
+4. Use `color-mix()` to derive missing stops (see § 0.5 in token-spec).
+5. Generate the override file (see `override-patterns.md` for the per-lib template).
 
 ### The "I don't have node access" fallback
 
 If the agent can't read `node_modules/` (sandbox, CI, browser-only context), it
 should:
-1. Use the runtime dump (Step 2) as the source of truth
+1. Use the runtime dump (Step 2) as the source of truth for variable names
 2. Ask the user to paste the package name and version
 3. Use the grep approach to find the package path
 4. If all else fails, ask the user to provide a sample CSS file from the lib
 
-**Never assume vanilla Element Plus / Ant Design.** Always verify.
+**Never assume vanilla Element Plus / Ant Design.** Always verify via the auto-detect.
 
 ---
 
@@ -174,48 +200,67 @@ should:
 
 > **The design source is sampling points, not a complete palette.** A Figma frame
 > typically shows you 1-3 stops of the primary and 1-2 swatches of each semantic
-> color. Element Plus / Ant Design / shadcn need ~40 color variables to fully
-> re-skin. The gap between "what the design gives" and "what the lib needs" is
-> what the agent closes.
+> color. Element Plus 2.4 / Ant Design v5 need **40-100 color variables** to fully
+> re-skin — but their **structures are different** (EP = 7 stops, AntD = 10 stops).
+> The gap between "what the design gives" and "what the lib needs" is what the agent
+> closes. **The lib's structure (not a generic 10-stop scale) determines the variables.**
 
-### The rule: one anchor + math, not hand-picked hex
+### The rule: one anchor + math, matched to the lib's structure
 
-For each color scale (primary, neutral, success, warning, danger, info), pick
-**one anchor** (usually the 500 stop, sometimes 600). Derive the other 9 stops
-using `color-mix()`. This is **not optional** — hand-picking 9 hex values for
-each of 6 scales is 54+ decisions the agent can get wrong, and any tweak to the
-brand color would force you to redo all 54.
+For each color scale (primary, neutral, success, warning, danger, info), pick **one
+anchor** matching what the lib calls it. Derive the other stops using `color-mix()`.
+The number of stops and their names **MUST match the lib** (see
+[references/token-spec.md § 1/2/3](token-spec.md)):
+
+- **Element Plus 2.4 / 中创**: anchor = `base`, derive `light-3/5/7/8/9` + `dark-2` = **7 stops**
+- **Ant Design v5**: anchor = 6 stop, derive `1/2/3/4/5/7/8/9/10` = **10 stops**
+
+**Why this matters**: hand-picking 9 hex values for each of 6 scales is 54+ decisions
+the agent can get wrong, and any tweak to the brand color would force you to redo all 54.
 
 The full algorithm + calibrated percentages is in
-[references/token-spec.md § 0](token-spec.md#0-color-system-derivation-algorithm).
-The key formulas:
+[references/token-spec.md § 0.5](token-spec.md#05-color-derivation-algorithm--when-the-design-only-gives-1-stop).
+
+**Element Plus / 中创 7-stop scale** (anchor = base, mixed with white/black):
 
 ```css
-/* Lighter: mix anchor with white at calibrated percentages */
---color-primary-50:  color-mix(in srgb, var(--color-primary-500)  8%, white);
---color-primary-100: color-mix(in srgb, var(--color-primary-500) 16%, white);
---color-primary-200: color-mix(in srgb, var(--color-primary-500) 28%, white);
---color-primary-300: color-mix(in srgb, var(--color-primary-500) 44%, white);
---color-primary-400: color-mix(in srgb, var(--color-primary-500) 68%, white);
-
-/* Darker: mix anchor with black at calibrated percentages */
---color-primary-600: color-mix(in srgb, var(--color-primary-500) 88%, black);
---color-primary-700: color-mix(in srgb, var(--color-primary-500) 76%, black);
---color-primary-800: color-mix(in srgb, var(--color-primary-500) 60%, black);
---color-primary-900: color-mix(in srgb, var(--color-primary-500) 44%, black);
+--color-primary-base:     #6366F1;   /* anchor from design, treated as 500 */
+--color-primary-light-3:  color-mix(in srgb, var(--color-primary-base) 75%, white);  /* 300 */
+--color-primary-light-5:  color-mix(in srgb, var(--color-primary-base) 90%, white);  /* 100 */
+--color-primary-light-7:  color-mix(in srgb, var(--color-primary-base) 96%, white);  /* 50  */
+--color-primary-light-8:  color-mix(in srgb, var(--color-primary-base) 98%, white);
+--color-primary-light-9:  color-mix(in srgb, var(--color-primary-base) 99%, white);
+--color-primary-dark-2:   color-mix(in srgb, var(--color-primary-base) 84%, black);  /* 700 */
 ```
 
-**Change `--color-primary-500` once, the whole scale re-derives automatically.**
+**Ant Design v5 10-stop scale** (anchor = 6, mixed with white/black):
+
+```css
+--color-primary-6: #6366F1;            /* anchor from design */
+--color-primary-1: color-mix(in srgb, var(--color-primary-6) 10%, white);
+--color-primary-2: color-mix(in srgb, var(--color-primary-6) 20%, white);
+--color-primary-3: color-mix(in srgb, var(--color-primary-6) 35%, white);
+--color-primary-4: color-mix(in srgb, var(--color-primary-6) 55%, white);
+--color-primary-5: color-mix(in srgb, var(--color-primary-6) 80%, white);
+--color-primary-7: color-mix(in srgb, var(--color-primary-6) 80%, black);
+--color-primary-8: color-mix(in srgb, var(--color-primary-6) 65%, black);
+--color-primary-9: color-mix(in srgb, var(--color-primary-6) 45%, black);
+--color-primary-10: color-mix(in srgb, var(--color-primary-6) 25%, black);
+```
+
+**Change the anchor once, the whole scale re-derives automatically.**
 
 ### "What to extract vs derive" decision
 
 | Design source gives              | Agent does                                          |
 |----------------------------------|-----------------------------------------------------|
-| Only `--color-primary-500`       | Use as anchor, derive the other 9 stops             |
-| `--color-primary-500` + `--color-primary-700` | Use both, derive the other 8 stops     |
-| All 10 primary stops             | Use all, skip derivation for primary                |
-| Only "main blue" + "hover"       | Treat main as 500, hover as 600, derive the rest    |
-| No primary at all                | Ask the user, or use a sensible default             |
+| Only `--color-primary-base` (EP) | Use as anchor, derive light-3/5/7/8/9 + dark-2      |
+| Only `--color-primary` (AntD)    | Use as anchor (treated as 6 stop), derive 1-5/7-10  |
+| `base` + `light-9` (EP)          | Use both, derive the other 5 stops                  |
+| `color-X-6` + `color-X-3` (AntD) | Use both, derive the other 8 stops                  |
+| All 7/10 stops                   | Use all, skip derivation                            |
+| Only "main blue" + "hover"       | Treat main as base/6, hover as light-5/3, derive    |
+| No primary at all                | Ask the user, or use --color-primary-base: #6366F1  |
 | Neutral grays not in design      | Derive from primary hue, fully desaturated          |
 | Success/warning/danger not in design | Use standard defaults (green/amber/red) + derive |
 
@@ -223,52 +268,42 @@ The key formulas:
 that exact value as the anchor and derive the rest. Don't override the explicitly
 given value with a derived one.
 
-### Extension decision tree
+### Per-lib token extraction (NOT a generic 50..900 scale)
 
-```
-Read design source
-   │
-   ├─ Primary color found?
-   │    ├─ Yes → use as --color-primary-500, derive 50/100/200/300/400/600/700/800/900
-   │    └─ No  → ask user or use --color-primary-500: #6366F1 (sensible default)
-   │
-   ├─ Neutral grays found?
-   │    ├─ Yes → use as --color-neutral-700/800/900 anchors, derive the rest
-   │    └─ No  → derive from primary hue (--color-neutral-h: <primary-h>)
-   │
-   ├─ Semantic colors (success/warning/danger/info) found?
-   │    ├─ Yes → use as -500 anchors, derive
-   │    └─ No  → use standard defaults, derive
-   │
-   └─ Surface/background/text colors found?
-        ├─ Yes → map to --color-bg-* and --color-text-*
-        └─ No  → derive from neutral scale
-```
+The exact variable name list comes from the lib template, not from a generic
+10-stop scale. Open `references/token-spec.md` and use:
+
+- § 1: Element Plus 2.4 (or 中创 § 3) — 7-stop scale, EP variable names
+- § 2: Ant Design v5 — 10-stop scale, AntD seed token names
+
+Fill in the anchor from the design, derive the rest with `color-mix()`. Do **not**
+emit `--color-primary-50..900` for EP — EP uses `light-9/8/7/5/3 + dark-2`.
 
 ### Quality gate
 
-Before generating the override file, run this check:
+Before generating the override file, run this check **in the browser, on the
+preview page, in light + dark mode**:
 
 ```js
-// In the browser, on the preview page:
-const missing = []
-for (const v of [
-  '--color-primary-50', '-100', '-200', '-300', '-400', '-500', '-600', '-700', '-800', '-900',
-  '--color-neutral-50', '-100', '-200', '-300', '-400', '-500', '-600', '-700', '-800', '-900',
-  '--color-success-50', '-500', '-700',
-  '--color-warning-50', '-500', '-700',
-  '--color-danger-50', '-500', '-700',
-  '--color-info-50', '-500', '-700',
-  '--color-bg-primary', '--color-bg-secondary', '--color-bg-elevated',
-  '--color-text-primary', '--color-text-secondary', '--color-text-disabled',
-  '--color-border-default', '--color-border-strong',
-]) {
-  const fullVar = v.startsWith('--') ? v : '--color-' + v
-  if (!getComputedStyle(document.documentElement).getPropertyValue(fullVar).trim()) {
-    missing.push(fullVar)
+const check = (selector) => {
+  const cs = getComputedStyle(document.querySelector(selector))
+  const required = []
+  // EP / 中创: 6 semantic colors × 7 stops + base
+  for (const role of ['primary', 'success', 'warning', 'danger', 'info']) {
+    required.push(`--color-${role}-base`)
+    for (const stop of ['light-3', 'light-5', 'light-7', 'light-8', 'light-9', 'dark-2']) {
+      required.push(`--color-${role}-${stop}`)
+    }
   }
+  // AntD: 6 colors × 10 stops
+  // for (const role of ['primary', 'success', 'warning', 'danger', 'info']) {
+  //   for (let i = 1; i <= 10; i++) required.push(`--color-${role}-${i}`)
+  // }
+  const missing = required.filter(v => !cs.getPropertyValue(v).trim())
+  if (missing.length) console.error(`[${selector}] Missing tokens:`, missing)
 }
-if (missing.length) console.error('Missing tokens:', missing)
+check(':root')
+check('html.dark')
 ```
 
 If any are missing, **add them to `colors.css` before generating the override**.
@@ -277,9 +312,9 @@ Gaps here = the "前边换了后边没变" failure mode.
 ### Why this matters
 
 The user will say "I gave you a color, why isn't the rest of the design updated?"
-because the lib has 40+ color variables and they only gave you 2. The answer is
-"we derived the rest algorithmically" — not "we missed it". Make this derivation
-**explicit in the README** so the user knows the magic happened.
+because the lib has 40-100 color variables and they only gave you 2. The answer is
+"we derived the rest algorithmically to match the lib's structure" — not "we missed it".
+Make this derivation **explicit in the README** so the user knows the magic happened.
 
 ---
 
@@ -291,15 +326,16 @@ Apply the same fill-the-gaps principle to each. Full algorithm + tunable knobs i
 
 ### Quick reference
 
-| Category        | Anchor(s)                                         | Math                          |
-|-----------------|---------------------------------------------------|-------------------------------|
-| **Color**       | `--color-primary-500` / `-success-500` / etc.     | `color-mix(in srgb, …, white\|black)` |
-| **Spacing**     | `--space-base: 4px` (or 8px)                      | `calc(var(--space-base) * N)` |
-| **Radius**      | `--radius-base: 6px` (or 4px / 12px)              | `calc(var(--radius-base) * M)` |
-| **Font size**   | `--font-size-base: 16px` + `--font-size-ratio: 1.25` | `calc(var(--font-size-base) * pow(var(--font-size-ratio), N))` |
-| **Line height** | `--line-height-base: 1.5`                         | direct value or `calc(...)`     |
-| **Border width**| `--border-width-base: 1px`                        | `calc(var(--border-width-base) * N)` |
-| **Motion dur.** | `--motion-duration-base: 200ms`                   | `calc(var(--motion-duration-base) * K)` |
+| Category        | Anchor(s)                                                              | Math                          |
+|-----------------|------------------------------------------------------------------------|-------------------------------|
+| **Color (EP)**  | `--color-primary-base` (or success/warning/danger/info base)            | `color-mix(in srgb, …, white\|black)` |
+| **Color (AntD)**| `--color-primary-6` (or success/warning/danger/info 6)                 | `color-mix(in srgb, …, white\|black)` |
+| **Spacing**     | `--space-base: 4px` (or 8px)                                           | `calc(var(--space-base) * N)` |
+| **Radius**      | `--radius-md: 4px` (EP default) / `borderRadius: 6` (AntD, single value) | direct or `calc(...)`         |
+| **Font size**   | `--font-size-base: 16px` + `--font-size-ratio: 1.25`                   | `calc(var(--font-size-base) * pow(var(--font-size-ratio), N))` |
+| **Line height** | `--line-height-base: 1.5`                                              | direct value or `calc(...)`     |
+| **Border width**| `--border-width-base: 1px`                                             | `calc(var(--border-width-base) * N)` |
+| **Motion dur.** | `--motion-duration-base: 200ms`                                        | `calc(var(--motion-duration-base) * K)` |
 
 ### "Fill the gaps" for each category
 
@@ -373,6 +409,16 @@ If any are missing, ask the user OR pick a sensible default from the design sour
 
 ## Phase 2: Token Extraction Checklist
 
+> **Important**: this checklist below is the **generic / lib-agnostic** view. The
+> actual variable names to emit come from the lib template in
+> [references/token-spec.md](token-spec.md):
+> - **Element Plus 2.4 / 中创 fork** → § 1 (or § 3) — 7-stop `light-9..dark-2`, `--el-*` override targets
+> - **Ant Design v5** → § 2 — 10-stop `1..10`, seed-token names
+>
+> The checklist below is what to **look for in the design source**. The lib template
+> is what to **write to the output file**. **Do not blindly emit `--color-primary-50..900`
+> for an EP project** — that is the "重新创建组件库" failure mode.
+
 When reading the design source, extract the following. **Be concrete, not vague.**
 The new design is the source of truth for all visual variables; the existing component
 library keeps its own interaction behavior. We are doing **visual re-skin**, not a behavior
@@ -380,22 +426,23 @@ replacement.
 
 ### Colors
 
-| What to look for     | Where to find it                          | Variable             |
-|----------------------|-------------------------------------------|----------------------|
-| Primary brand color  | Buttons, links, focus rings               | `--color-primary-500` |
-| Primary tints/shades | Hover/active states of primary            | `--color-primary-{50,100,200,300,400,600,700,800,900}` |
-| Neutral grays        | Body text, borders, dividers, surfaces    | `--color-neutral-{50...900}` |
-| Success              | Success toasts, "OK" badges, valid input  | `--color-success-{50...700}` |
-| Warning              | Warning toasts, "caution" indicators      | `--color-warning-{50...700}` |
-| Danger / Error       | Error states, destructive buttons         | `--color-danger-{50...700}` |
-| Info                 | Info toasts, neutral notifications        | `--color-info-{50...700}` |
-| Background surfaces  | Page background, card background          | `--color-bg-{primary,secondary,elevated}` |
-| Text colors          | Body, headings, captions, disabled        | `--color-text-{primary,secondary,disabled,inverse}` |
-| Borders              | Default, strong, subtle                   | `--color-border-{default,strong,subtle}` |
+| What to look for     | Where to find it                          | EP / 中创 variable (7 stops)               | Ant Design v5 variable (10 stops)   |
+|----------------------|-------------------------------------------|--------------------------------------------|-------------------------------------|
+| Primary brand color  | Buttons, links, focus rings               | `--color-primary-base` (anchor)            | `--color-primary-6` (anchor)        |
+| Primary tints/shades | Hover/active states of primary             | `--color-primary-{light-3,5,7,8,9,dark-2}` | `--color-primary-{1..10}`           |
+| Neutral grays        | Body text, borders, dividers, surfaces    | `--color-neutral-{light-9..dark-2}`        | `--color-neutral-{1..10}`           |
+| Success              | Success toasts, "OK" badges, valid input   | `--color-success-{base,light-3..9,dark-2}` | `--color-success-{1..10}`           |
+| Warning              | Warning toasts, "caution" indicators      | `--color-warning-{base,light-3..9,dark-2}` | `--color-warning-{1..10}`           |
+| Danger / Error       | Error states, destructive buttons         | `--color-danger-{base,light-3..9,dark-2}`  | `--color-danger-{1..10}`            |
+| Info                 | Info toasts, neutral notifications        | `--color-info-{base,light-3..9,dark-2}`    | `--color-info-{1..10}`              |
+| Background surfaces  | Page background, card background          | `--color-bg-{page,surface,container,overlay}` | `--color-bg-{container,elevated,layout}` |
+| Text colors          | Body, headings, captions, disabled        | `--color-text-{primary,regular,secondary,placeholder,disabled}` | `--color-text-{heading,primary,secondary,tertiary,disabled,placeholder}` |
+| Borders              | Default, strong, subtle                   | `--color-border-{default,light,lighter,extra-light,dark}` | `--color-border-{secondary,default,colorSplit,colorBgContainer}` |
 
-**Rule**: If Figma only gives you the 500 stop, derive the rest using
-`color-mix(in srgb, var(--color-primary-500) X%, white|black)`. Do not hand-pick hex
-values for 50/100/200 — use the math.
+**Rule**: If Figma only gives you the base/6 stop, derive the rest using
+`color-mix(in srgb, var(--color-primary-base) X%, white|black)` for EP, or
+`color-mix(in srgb, var(--color-primary-6) X%, white|black)` for AntD. Do not
+hand-pick hex values for the other stops — use the math.
 
 ### Typography
 
@@ -497,20 +544,32 @@ which motions are theme-controlled and which inherit from the lib.
 ## Phase 3: Override File Checklist
 
 Before writing `overrides/<lib>-theme-override.css`, read the corresponding section of
-[references/override-patterns.md](override-patterns.md) and verify these are covered:
+[references/override-patterns.md](override-patterns.md) for your detected lib:
+
+- **Element Plus 2.4** → `§ A. EP override pattern`
+- **Ant Design v5** → `§ B. AntD override pattern` (uses `<ConfigProvider theme={{ token }}>` wrapper, not a CSS file)
+- **中创 fork** → `§ C. 中创 override pattern` (EP base + `--cv-*` extensions)
+
+These 3 are the only supported libs. If your project uses a 4th lib, **STOP** and
+add it to `override-patterns.md` first, or refuse the task.
+
+Verify the override covers:
 
 - [ ] **All primary light/dark stops** (`--<lib>-color-primary-light-3/5/7/8/9` and
-      `--<lib>-color-primary-dark-2`). Missing any of these causes hover/active state
-      color drift — the most common visual bug.
+      `--<lib>-color-primary-dark-2` for EP / 中创; `colorPrimary-1..10` for AntD).
+      Missing any of these causes hover/active state color drift — the most common
+      visual bug.
 - [ ] **All semantic colors** (success / warning / danger / info), each with their
       light/dark variants if the lib uses them.
 - [ ] **All radius variables** that the lib exposes (e.g. Element Plus has
-      `--el-border-radius-base` / `--el-border-radius-small` / `--el-border-radius-round`).
+      `--el-border-radius-base` / `--el-border-radius-small` / `--el-border-radius-round`;
+      AntD has `borderRadius` + per-component `borderRadiusLG`/`borderRadiusSM`).
 - [ ] **All text color variables** (primary, regular, secondary, placeholder, disabled).
 - [ ] **All background variables** (page, surface, container, overlay).
 - [ ] **All border color variables** (default, light, lighter, extra-light, dark).
 - [ ] **Font family** at minimum.
-- [ ] **Dark mode variant** in `[data-theme="dark"]` block.
+- [ ] **Dark mode variant** in `[data-theme="dark"]` block (EP / 中创).
+      For AntD, dark mode is handled via `theme.algorithm: darkAlgorithm`, not CSS.
 
 A "complete" override for Element Plus is ~80 lines of CSS. Don't be tempted to trim
 it down — every variable exists for a reason.

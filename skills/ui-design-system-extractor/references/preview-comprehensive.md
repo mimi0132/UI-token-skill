@@ -519,9 +519,8 @@ console.log('stylesheets:', links)
 
 // 2. Confirm component library is actually loaded
 console.log('ElementPlus:', !!window.ElementPlus)
-// For Ant Design: console.log('antd:', !!window.antd)
-// For Naive UI: console.log('naive:', !!window.naive)
-// For shadcn: there's no global; check for Radix data attrs
+// For Ant Design v5: console.log('antd:', !!window.antd)
+// For 中创 fork: same global as Element Plus — verify by reading SCSS
 
 // 3. Verify all 50+ component classes are present
 const required = [
@@ -659,14 +658,15 @@ Same structure, change class names:
 
 | Library | Sample classes |
 |---|---|
-| Element Plus | `el-button el-button--primary`, `el-input`, `el-table`, `el-select` |
-| Ant Design | `ant-btn ant-btn-primary`, `ant-input`, `ant-table`, `ant-select` |
-| Naive UI | `n-button n-button--primary-type`, `n-input`, `n-data-table`, `n-select` |
-| Vuetify | `v-btn v-btn--variant-elevated`, `v-text-field`, `v-data-table` |
-| MUI | `MuiButton-contained`, `MuiTextField-root`, `MuiDataGrid-root` |
-| shadcn/ui | Tailwind utilities: `bg-primary`, `text-primary-foreground`, `rounded-md` |
-| Arco Design | `arco-btn arco-btn-primary`, `arco-input`, `arco-table` |
-| TDesign | `t-button t-button--theme-primary`, `t-input`, `t-table` |
+| Element Plus 2.4 | `el-button el-button--primary`, `el-input`, `el-table`, `el-select` |
+| 中创 fork (EP-based) | Same as Element Plus (`el-button`, `el-input`, ...) + `cv-*` extensions if any |
+| Ant Design v5 | `ant-btn ant-btn-primary`, `ant-input`, `ant-table`, `ant-select` |
 
-The 8 categories map to similar components in all major libraries. When the user's
-library is unknown, ask (Phase 0), then look up the equivalent in that lib's docs.
+> **Why only 3 libraries**: this skill supports exactly these 3 (see
+> `system-prompt.md` Phase 0). If a user asks about Naive UI / shadcn / MUI /
+> Chakra / Vuetify / Arco / TDesign, refuse and tell them to either switch lib
+> or extend this skill first.
+
+The 3 categories map to similar components across the 3 supported libraries.
+When the user has one of the 3 supported libs (auto-detected from
+`package.json`), pick the matching class names from the table above.
