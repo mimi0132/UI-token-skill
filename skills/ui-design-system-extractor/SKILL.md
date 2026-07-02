@@ -119,8 +119,7 @@ Do NOT invoke when:
 ### Step 0 — Auto-Detect Target Library (mandatory, no asking)
 
 > **The user may not know the version. The user may not know the precise lib name.
-> That's fine. This step auto-detects from `package.json` / `node_modules` and refuses
-> to start if the project uses a lib this skill does not support.**
+> That's fine. The agent will ask which library they use and match against the 3 supported.**
 
 **Supported libraries** (3 only):
 
@@ -130,31 +129,33 @@ Do NOT invoke when:
 | **Ant Design v5**    | `--ant-` + token    | 10-stop scale `1..10` (CSS-in-JS, ConfigProvider) |
 | **中创 fork**         | `--el-` + `--cv-`   | Inherits EP 2.4 + `--cv-*` extensions         |
 
-**Detection script** (run in project root, before any other work):
+**Workflow**:
 
-```bash
-node -e "
-const p = require('./package.json');
-const all = { ...p.dependencies, ...p.devDependencies };
-console.log(JSON.stringify({
-  'element-plus': all['element-plus'],
-  'antd':         all['antd'],
-}, null, 2));
-"
-# Then check for --cv- markers to detect 中创 fork:
-grep -rh -- '--cv-' node_modules/element-plus/lib/theme-chalk/*.scss 2>/dev/null | head -3
-```
+1. **Ask the user which library they use** (use AskUserQuestion):
+   - "你项目中使用的组件库是？"
+   - Options: Element Plus 2.4, Ant Design v5, 中创 fork
+
+2. **If user is unsure**, run detection script (optional):
+   ```bash
+   node -e "
+   const p = require('./package.json');
+   const all = { ...p.dependencies, ...p.devDependencies };
+   console.log(JSON.stringify({
+     'element-plus': all['element-plus'],
+     'antd':         all['antd'],
+   }, null, 2));
+   "
+   ```
 
 **Classification rules**:
 
-| Detected                                  | Action                              |
-|-------------------------------------------|-------------------------------------|
-| `element-plus` + NO `cv-` markers         | Vanilla Element Plus → use § 1 template |
-| `element-plus` + `cv-` markers in scss    | 中创 fork → use § 3 template         |
-| `antd` ≥ 5.0                              | Ant Design v5 → use § 2 template     |
-| `antd` < 5.0                              | **STOP**, ask user to upgrade to v5  |
-| Multiple libs                             | **STOP**, ask user which to target   |
-| None of the 3 supported                   | **STOP**, tell user what's supported |
+| User response / Detected | Action                              |
+|---------------------------|-------------------------------------|
+| "Element Plus" / "EP"     | Element Plus → use § 1 template     |
+| "Ant Design" / "AntD"     | Ant Design v5 → use § 2 template    |
+| "中创" / "中创组件库"      | 中创 fork → use § 3 template        |
+| Multiple libs detected    | Ask user which to target            |
+| Not one of the 3          | Tell user what's supported          |
 
 **Then ask the user 2 things** (use AskUserQuestion):
 
@@ -163,10 +164,6 @@ grep -rh -- '--cv-' node_modules/element-plus/lib/theme-chalk/*.scss 2>/dev/null
    - Complete re-skin (colors + font + spacing + radius + shadow)
    - Colors only
    - Custom (user specifies)
-
-**Do NOT ask which lib** — that's already auto-detected. **Do NOT ask the version** —
-read it from package.json. The user is presumed to be a non-designer; technical
-details are the agent's job.
 
 ### Step 1 — Extract Design Tokens
 

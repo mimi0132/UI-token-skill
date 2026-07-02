@@ -7,7 +7,7 @@ the exact variable name, value range, or dark-mode mapping.
 > generic-design-system-driven. We do **NOT** ship a universal `--color-primary-50/100/.../900`
 > palette that every project must use. Instead, we ship **3 templates** (Element Plus 2.4,
 > Ant Design v5, 中创 fork), each 1:1 matching the real CSS variables of that library.
-> See `references/lib-detect.md` for auto-detection and `references/role-glossary.md` for
+> See `references/system-prompt.md` for detection and `references/role-glossary.md` for
 > natural-language role prompts.
 
 ---
@@ -32,56 +32,53 @@ Three supported libraries, three different color structures:
 Each library has its own structure. We **expose each structure as a separate token template**.
 Never mix them. Never invent variables that don't exist in the chosen library.
 
-### 0.2 Auto-detect the library (mandatory before any color work)
+### 0.2 Identify the library (user-driven, primary path)
 
-Read `package.json` to find which lib the project uses and its version:
+Ask the user which library they use. The 3 supported options are:
+- Element Plus 2.4
+- Ant Design v5
+- 中创 fork
+
+**Optional detection** (if user is unsure):
 
 ```bash
-# In project root, run all of these and pick whichever returns a version
 node -p "require('./package.json').dependencies?.['element-plus'] || require('./package.json').devDependencies?.['element-plus']" 2>/dev/null
 node -p "require('./package.json').dependencies?.['antd']        || require('./package.json').devDependencies?.['antd']"        2>/dev/null
-node -p "require('./package.json').dependencies?.['naive-ui']    || require('./package.json').devDependencies?.['naive-ui']"    2>/dev/null
-
-# 中创 fork is detected by looking for --cv- variables in node_modules/element-plus/dist/index.css
-# OR for these fork markers in scss: .cv- / cv-avatar / cv-button / cv-message
-grep -r "cv-" node_modules/element-plus/lib/theme-chalk/*.scss 2>/dev/null | head -3
 ```
 
-If **none** of the 3 supported libs is found → STOP. Tell the user:
+If **none** of the 3 supported libs is selected → STOP. Tell the user:
 
-> "This skill supports Element Plus 2.4, Ant Design v5, and 中创 fork. Your project uses
-> `{detected-lib}`. Add one of the supported libs, or extend this skill."
+> "This skill supports Element Plus 2.4, Ant Design v5, and 中创 fork."
 
-See `references/lib-detect.md` for the full detection script and per-library version pin list.
+See `references/system-prompt.md` for the detection workflow.
 
-### 0.3 Get the real CSS variable list from the installed version (mandatory)
+### 0.3 Get the real CSS variable list (optional, if lib is installed)
 
-**Do not** generate tokens from a memorized list. The lib's variables may differ between
-versions. Dump the real ones from `node_modules`:
+If the user has the library installed, dump the real variables from `node_modules` to verify
+the template matches. Otherwise, use the built-in templates directly — they are already
+verified against the official versions.
 
 ```bash
 LIB_DIR="node_modules/element-plus"
 [ -d "$LIB_DIR" ] || LIB_DIR="node_modules/antd"
-[ -d "$LIB_DIR" ] || LIB_DIR="node_modules/naive-ui"
 
 # For Element Plus
 grep -oE -- "--el-[a-z0-9-]+" "$LIB_DIR/dist/index.css" 2>/dev/null | sort -u
 
-# For Ant Design v5 (CSS-in-JS, so dump from source)
+# For Ant Design v5
 grep -oE "colorPrimary[A-Za-z]*" "$LIB_DIR/lib/theme/interface/seeds.ts" \
   "$LIB_DIR/lib/theme/interface/maps.ts" 2>/dev/null | sort -u
 ```
 
-**Output** of this dump = the source of truth for the token template. Cross-reference it
-against § 1 / § 2 / § 3 of this document. If the dump contains variables not in the
-template (e.g. new in 2.5), add them to the template before generating tokens.
+**Output** of this dump = optional cross-reference against § 1 / § 2 / § 3 of this document.
+If the dump contains variables not in the template, add them before generating tokens.
 
-### 0.4 The 3-step workflow
+### 0.4 The workflow
 
-1. **Auto-detect** the lib from `package.json` (see 0.2).
-2. **Dump** the lib's real CSS variables (see 0.3). This produces the lib's "shape".
-3. **Pick the matching template** from § 1 (EP), § 2 (AntD), or § 3 (中创) below.
-   Fill the template from the design source. **Do not invent variables that aren't in the dump.**
+1. **Ask user** which lib they use (see 0.2).
+2. **Pick the matching template** from § 1 (EP), § 2 (AntD), or § 3 (中创) below.
+3. **Optional**: If lib is installed, cross-check variables (see 0.3).
+4. **Fill the template** from the design source.
 
 ### 0.5 Color derivation algorithm (color-mix) — when the design only gives 1 stop
 
@@ -720,10 +717,9 @@ A generated token set passes the validation check only if:
    E.g. don't define `--color-primary-foo` if EP doesn't have a `--el-color-primary-foo`.
 
 3. **The lib name in the override file matches the lib actually installed** in the project.
-   Run `node -p "require('./package.json').dependencies?.['element-plus']"` to confirm.
+   Run `node -p "require('./package.json').dependencies?.['element-plus']"` to confirm (optional).
 
-4. **The 3-step workflow (§ 0.4) was followed**: auto-detect → dump → pick template.
-   Do not skip the dump step. Do not invent variables from memory.
+4. **The workflow (§ 0.4) was followed**: ask user → pick template → fill from design source.
 
 See `references/system-prompt.md` for the audit table that the agent must fill out
 before claiming a token set is complete.

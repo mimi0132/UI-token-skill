@@ -35,7 +35,7 @@ npx skills add mimi0132/UI-token-skill --all
 > 我的项目是 Vue 3 + Element Plus,这是设计稿:https://figma.com/.../MyApp,按这个设计稿覆盖所有视觉,保留所有交互
 
 Agent 会:
-1. 自动检测项目里的组件库
+1. 询问你项目使用的组件库
 2. 提取 15 维度变量 → 7 个 token 文件 (`tokens/*.css`)
 3. 映射到目标库 CSS 变量 → 1 个 override (`overrides/<lib>-theme-override.css`) ⭐
 4. 生成 1 个预览页让你先看效果 (`preview/comprehensive-preview.html`)

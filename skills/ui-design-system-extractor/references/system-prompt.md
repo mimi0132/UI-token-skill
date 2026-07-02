@@ -44,10 +44,20 @@ If any of these is missing, ask. Do not guess.
 > maintaining 3+ parallel templates, more bugs, and inconsistent results. Better to be
 > excellent at 3 than mediocre at 8.
 
-### Step 1: Auto-detect the lib from package.json (mandatory)
+### Step 1: Ask the user which library they use (mandatory)
 
 The user may not know the version. The user may not know the lib name precisely. That's
-fine — the agent auto-detects both. **Never ask the user for the version.**
+fine — ask them directly using AskUserQuestion.
+
+**Question**: "你项目中使用的组件库是？"
+**Options**:
+- Element Plus 2.4
+- Ant Design v5
+- 中创 fork
+
+### Step 2: If user is unsure, run optional detection script
+
+If user says "我不知道" or "不确定":
 
 ```bash
 cd /Users/zhaozihan/Desktop/UI-提取- agent  # or wherever the project root is
@@ -56,32 +66,27 @@ cd /Users/zhaozihan/Desktop/UI-提取- agent  # or wherever the project root is
 node -e "
 const p = require('./package.json');
 const all = { ...p.dependencies, ...p.devDependencies };
-const out = {
+console.log(JSON.stringify({
   'element-plus': all['element-plus'],
   'antd':         all['antd'],
-  'naive-ui':     all['naive-ui'],
-  '@shadcn/ui':   all['@shadcn/ui'],
-  'tailwindcss':  all['tailwindcss'],
-  'vuetify':      all['vuetify'],
-  '@mui/material': all['@mui/material'],
-  '@chakra-ui/react': all['@chakra-ui/react'],
-};
-console.log(JSON.stringify(out, null, 2));
+}, null, 2));
 "
 ```
 
 Then classify:
 
-| Detected                                      | Classification                  | Next step                         |
-|-----------------------------------------------|---------------------------------|-----------------------------------|
-| `element-plus` exists, NO `cv-` in scss       | Vanilla Element Plus            | Use § 1 (EP) template             |
-| `element-plus` exists, `cv-` markers in scss  | 中创 fork                       | Use § 3 (中创) template            |
-| `antd` exists, version ≥ 5.0                  | Ant Design v5                   | Use § 2 (AntD) template           |
-| `antd` exists, version < 5.0                  | Ant Design v4 (legacy)          | **STOP**, ask user to upgrade to v5 |
-| Multiple of above                             | Multi-lib project               | **STOP**, ask user which to target |
-| None of the 3 supported                       | Other / unknown                 | **STOP**, message above           |
+| User response / Detected | Classification                  | Next step                         |
+|---------------------------|---------------------------------|-----------------------------------|
+| "Element Plus" / "EP"     | Vanilla Element Plus            | Use § 1 (EP) template             |
+| "Ant Design" / "AntD"     | Ant Design v5                   | Use § 2 (AntD) template           |
+| "中创" / "中创组件库"      | 中创 fork                       | Use § 3 (中创) template            |
+| `element-plus` detected   | Vanilla Element Plus (assumed)  | Use § 1 (EP) template             |
+| `antd` detected, ≥ 5.0    | Ant Design v5                   | Use § 2 (AntD) template           |
+| `antd` detected, < 5.0    | Ant Design v4 (legacy)          | **STOP**, ask user to upgrade to v5 |
+| Multiple of above         | Multi-lib project               | **STOP**, ask user which to target |
+| None of the 3 supported   | Other / unknown                 | **STOP**, message above           |
 
-To detect the 中创 fork (after element-plus is found):
+To detect the 中创 fork (if element-plus is detected):
 
 ```bash
 # Check for --cv- variables in compiled CSS, or cv- class names in scss
@@ -97,10 +102,10 @@ If either returns hits → it's the 中创 fork. Otherwise it's vanilla EP.
 > The dump is used to **cross-check** the template against the installed version (in
 > case the user has a newer EP, e.g. 2.5, where new variables may have been added).
 
-### Step 2: Cross-check against the installed version (recommended, not blocking)
+### Step 3: Cross-check variables (optional, if user has lib installed)
 
-Use the runtime dump to verify the template is complete. **Do not skip this** if the
-project uses a lib version newer than the one this skill was built for.
+If the user has the library installed and wants to verify variables match, use the runtime
+dump. Otherwise, skip this step — the built-in templates are already verified.
 
 ```js
 // Browser DevTools console on a page that uses the lib
@@ -139,7 +144,7 @@ add them to `token-spec.md` § 1 before generating tokens. **Never silently skip
 **If the template has variables not in the installed lib**: remove them from the
 generated token file — they'd be dead code.
 
-### Step 3: Categorize the variables (informational only)
+### Step 4: Categorize the variables (informational only)
 
 ```js
 const groups = { color: [], size: [], radius: [], shadow: [], space: [], motion: [], font: [], border: [], other: [] }
@@ -187,7 +192,7 @@ limitation and offer to add it as a 4th template.
 
 If the agent can't read `node_modules/` (sandbox, CI, browser-only context), it
 should:
-1. Use the runtime dump (Step 2) as the source of truth for variable names
+1. Use the runtime dump (Step 3) as the source of truth for variable names
 2. Ask the user to paste the package name and version
 3. Use the grep approach to find the package path
 4. If all else fails, ask the user to provide a sample CSS file from the lib

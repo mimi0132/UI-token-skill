@@ -560,18 +560,18 @@ console.log('primary bg:', primaryBtn ? getComputedStyle(primaryBtn).backgroundC
 ## How to Choose a Library
 
 **This skill supports 3 libraries only**: Element Plus 2.4, Ant Design v5, and the
-中创 fork. Detection is automatic (see system-prompt.md Phase 0) — the agent reads
-`package.json` to identify which lib the project uses, then picks the matching
-template. **Do not ask the user to pick**.
+中创 fork. The agent asks the user which library they use, then picks the matching
+template.
 
-| Detected in `package.json` + scss                | Template used       | Section in this file                          |
+| User choice / Detection                          | Template used       | Section in this file                          |
 |--------------------------------------------------|---------------------|-----------------------------------------------|
-| `element-plus` + NO `--cv-` markers in scss     | Element Plus 2.4    | [§ Element Plus 2.4](#element-plus-24-vue-3)  |
-| `element-plus` + `--cv-` markers in scss        | 中创 fork           | [§ 中创组件库](#中创组件库-vue-3-element-plus-fork) |
-| `antd` ≥ 5.0                                     | Ant Design v5       | [§ Ant Design v5](#ant-design-v5-react)       |
-| `antd` < 5.0                                     | **STOP** — ask to upgrade to v5 |
-| Multiple of the above                            | **STOP** — ask user which to target |
-| None of the 3 supported                          | **STOP** — message user, do not guess |
+| "Element Plus" / "EP"                            | Element Plus 2.4    | [§ Element Plus 2.4](#element-plus-24-vue-3)  |
+| "中创" / "中创组件库"                             | 中创 fork           | [§ 中创组件库](#中创组件库-vue-3-element-plus-fork) |
+| "Ant Design" / "AntD"                            | Ant Design v5       | [§ Ant Design v5](#ant-design-v5-react)       |
+| `element-plus` detected in package.json          | Element Plus 2.4    | [§ Element Plus 2.4](#element-plus-24-vue-3)  |
+| `antd` ≥ 5.0 detected in package.json            | Ant Design v5       | [§ Ant Design v5](#ant-design-v5-react)       |
+| Multiple of the above                            | Ask user which to target |
+| None of the 3 supported                          | Message user, do not guess |
 
 If a 4th library appears (e.g., shadcn, Naive UI, MUI, Chakra, Vuetify), **add a
 new section to this file first** with the full CSS variable mapping for that lib,

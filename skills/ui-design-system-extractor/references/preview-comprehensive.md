@@ -668,5 +668,4 @@ Same structure, change class names:
 > or extend this skill first.
 
 The 3 categories map to similar components across the 3 supported libraries.
-When the user has one of the 3 supported libs (auto-detected from
-`package.json`), pick the matching class names from the table above.
+When the user has one of the 3 supported libs (identified by user or detected), pick the matching class names from the table above.
